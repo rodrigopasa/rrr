@@ -1,6 +1,6 @@
-// import { Client } from "whatsapp-web.js";
+import { Client } from "whatsapp-web.js";
 import { log } from "./vite";
-// import qrcode from "qrcode";
+import qrcode from "qrcode";
 import { EventEmitter } from "events";
 
 // Custom type for message with additional properties
@@ -12,12 +12,13 @@ type ScheduledMessage = {
   subject?: string;
 }
 
-// Mock WhatsApp client for development without system dependencies
 class WhatsAppClient extends EventEmitter {
+  private client: Client | null = null;
   private isInitialized = false;
   private isAuthenticated = false;
   private authenticatedUsers = new Set<number>();
   private qrCode: string | null = null;
+  private isDevelopment = process.env.NODE_ENV === 'development';
 
   constructor() {
     super();
@@ -26,54 +27,77 @@ class WhatsAppClient extends EventEmitter {
 
   private async initialize() {
     try {
-      log("Initializing Mock WhatsApp client...", "whatsapp");
+      log("Initializing WhatsApp client...", "whatsapp");
       
-      // Mock successful initialization after a short delay
-      setTimeout(() => {
-        this.isInitialized = true;
-        this.isAuthenticated = true;
-        this.emit("ready");
-        log("Mock WhatsApp client is ready!", "whatsapp");
-      }, 2000);
-
-      this.client.on("qr", (qr) => {
-        log("QR Code received", "whatsapp");
-        qrcode.toDataURL(qr, (err, url) => {
-          if (err) {
-            log(`Error generating QR code: ${err}`, "whatsapp");
-            return;
-          }
-          this.qrCode = url;
-          this.emit("qr", url);
+      // In development with Replit, we might not have all the necessary
+      // dependencies for Puppeteer, so we'll simulate a successful client
+      if (this.isDevelopment) {
+        setTimeout(() => {
+          this.isInitialized = true;
+          this.isAuthenticated = true;
+          this.emit("ready");
+          log("WhatsApp client initialized in development mode", "whatsapp");
+        }, 2000);
+        return;
+      }
+      
+      // Only attempt to create a real client in production environment
+      this.client = new Client({
+        puppeteer: {
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-accelerated-2d-canvas",
+            "--no-first-run",
+            "--no-zygote",
+            "--single-process",
+            "--disable-gpu",
+          ],
+        },
+      });
+      
+      // Set up event listeners
+      if (this.client) {
+        this.client.on("qr", (qr) => {
+          log("QR Code received", "whatsapp");
+          qrcode.toDataURL(qr, (err, url) => {
+            if (err) {
+              log(`Error generating QR code: ${err}`, "whatsapp");
+              return;
+            }
+            this.qrCode = url;
+            this.emit("qr", url);
+          });
         });
-      });
 
-      this.client.on("ready", () => {
-        log("WhatsApp client is ready!", "whatsapp");
-        this.isAuthenticated = true;
-        this.isInitialized = true;
-        this.qrCode = null;
-        this.emit("ready");
-      });
+        this.client.on("ready", () => {
+          log("WhatsApp client is ready!", "whatsapp");
+          this.isAuthenticated = true;
+          this.isInitialized = true;
+          this.qrCode = null;
+          this.emit("ready");
+        });
 
-      this.client.on("authenticated", () => {
-        log("WhatsApp authenticated", "whatsapp");
-        this.isAuthenticated = true;
-      });
+        this.client.on("authenticated", () => {
+          log("WhatsApp authenticated", "whatsapp");
+          this.isAuthenticated = true;
+        });
 
-      this.client.on("auth_failure", (msg) => {
-        log(`WhatsApp authentication failed: ${msg}`, "whatsapp");
-        this.isAuthenticated = false;
-      });
+        this.client.on("auth_failure", (msg) => {
+          log(`WhatsApp authentication failed: ${msg}`, "whatsapp");
+          this.isAuthenticated = false;
+        });
 
-      this.client.on("disconnected", (reason) => {
-        log(`WhatsApp disconnected: ${reason}`, "whatsapp");
-        this.isAuthenticated = false;
-        this.isInitialized = false;
-        this.initialize();
-      });
+        this.client.on("disconnected", (reason) => {
+          log(`WhatsApp disconnected: ${reason}`, "whatsapp");
+          this.isAuthenticated = false;
+          this.isInitialized = false;
+          this.initialize();
+        });
 
-      await this.client.initialize();
+        await this.client.initialize();
+      }
     } catch (error) {
       log(`Error initializing WhatsApp: ${error}`, "whatsapp");
       this.isInitialized = false;
@@ -84,7 +108,7 @@ class WhatsAppClient extends EventEmitter {
   }
 
   async sendMessage(to: string, message: string): Promise<string | null> {
-    if (!this.client || !this.isAuthenticated) {
+    if (!this.isAuthenticated) {
       throw new Error("WhatsApp client not ready or not authenticated");
     }
 
@@ -92,7 +116,13 @@ class WhatsAppClient extends EventEmitter {
       // Format the number to international format if needed
       const formattedNumber = this.formatPhoneNumber(to);
       
-      // Send the message
+      // In development mode, simulate sending message
+      if (this.isDevelopment || !this.client) {
+        log(`[DEV] Sending message to ${formattedNumber}: ${message}`, "whatsapp");
+        return `mock_message_${Date.now()}`;
+      }
+      
+      // In production, actually send the message
       const response = await this.client.sendMessage(`${formattedNumber}@c.us`, message);
       return response.id._serialized;
     } catch (error) {
@@ -104,7 +134,7 @@ class WhatsAppClient extends EventEmitter {
   async sendBulkMessages(
     message: ScheduledMessage
   ): Promise<{ successful: string[]; failed: string[] }> {
-    if (!this.client || !this.isAuthenticated) {
+    if (!this.isAuthenticated) {
       throw new Error("WhatsApp client not ready or not authenticated");
     }
 

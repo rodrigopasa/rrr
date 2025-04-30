@@ -48,7 +48,7 @@ export interface IStorage {
     deliveryRate: number;
   }>;
 
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Fix type issue with session store
 }
 
 export class MemStorage implements IStorage {
@@ -86,7 +86,13 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentId++;
     const createdAt = new Date();
-    const user: User = { ...insertUser, id, createdAt };
+    // Ensure all required fields are present
+    const user: User = { 
+      ...insertUser, 
+      id, 
+      createdAt,
+      email: insertUser.email || null 
+    };
     this.users.set(id, user);
     return user;
   }
@@ -115,7 +121,13 @@ export class MemStorage implements IStorage {
   async createContact(contact: InsertContact): Promise<Contact> {
     const id = this.currentId++;
     const createdAt = new Date();
-    const newContact: Contact = { ...contact, id, createdAt };
+    // Ensure all required fields are present
+    const newContact: Contact = { 
+      ...contact, 
+      id, 
+      createdAt,
+      groupId: contact.groupId || null 
+    };
     this.contactsStore.set(id, newContact);
     return newContact;
   }
@@ -157,7 +169,17 @@ export class MemStorage implements IStorage {
   async createMessage(message: InsertMessage): Promise<Message> {
     const id = this.currentId++;
     const createdAt = new Date();
-    const newMessage: Message = { ...message, id, createdAt };
+    // Ensure all required fields are present with default values
+    const newMessage: Message = { 
+      ...message, 
+      id, 
+      createdAt,
+      subject: message.subject || null,
+      status: "draft",
+      isScheduled: message.isScheduled || false,
+      scheduledAt: message.scheduledAt || null,
+      sentAt: null
+    };
     this.messagesStore.set(id, newMessage);
     return newMessage;
   }
@@ -281,7 +303,15 @@ export class MemStorage implements IStorage {
     for (const recipient of recipients) {
       const id = this.currentId++;
       const createdAt = new Date();
-      const newRecipient: MessageRecipient = { ...recipient, id, createdAt };
+      // Ensure all required fields are present
+      const newRecipient: MessageRecipient = { 
+        ...recipient, 
+        id, 
+        createdAt,
+        status: recipient.status || "pending",
+        sentAt: null,
+        deliveredAt: null
+      };
       this.messageRecipientsStore.set(id, newRecipient);
       createdRecipients.push(newRecipient);
     }
