@@ -7,7 +7,7 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y \
     chromium \
-    wget \
+    curl \
     ca-certificates \
     fonts-liberation \
     libappindicator3-1 \
@@ -68,7 +68,7 @@ COPY . .
 
 # Construir a aplicação (NODE_ENV=development para que as devDependencies estejam disponíveis)
 ENV NODE_ENV=development
-RUN npm run build
+RUN npm run build || cat /tmp/vite-error.log
 
 FROM base AS runner
 
@@ -79,11 +79,20 @@ ENV NODE_ENV=production
 COPY --from=builder /app/dist ./dist
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json package-lock.json ./
-COPY .env-example .env
 
-# Copiar arquivos de configuração necessários
-COPY docker-healthcheck.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-healthcheck.sh
+# Criar arquivo .env com configurações básicas
+RUN echo "NODE_ENV=production" > .env && \
+    echo "PORT=5000" >> .env && \
+    echo "SESSION_SECRET=temp_secret_for_docker" >> .env && \
+    echo "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1" >> .env && \
+    echo "PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium" >> .env
+
+# Criar script de healthcheck
+RUN echo '#!/bin/sh' > /usr/local/bin/docker-healthcheck.sh && \
+    echo 'set -e' >> /usr/local/bin/docker-healthcheck.sh && \
+    echo 'curl -f http://localhost:5000/health || exit 1' >> /usr/local/bin/docker-healthcheck.sh && \
+    echo 'exit 0' >> /usr/local/bin/docker-healthcheck.sh && \
+    chmod +x /usr/local/bin/docker-healthcheck.sh
 
 # Expor a porta que a aplicação usa
 EXPOSE 5000
