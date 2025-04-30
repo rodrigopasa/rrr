@@ -70,8 +70,8 @@ WORKDIR /app
 # Copiar arquivos para instalação de dependências
 COPY package*.json ./
 
-# Instalar dependências de produção (skip dev dependencies)
-RUN npm ci --only=production
+# Instalar todas as dependências (incluindo dev dependencies para o build)
+RUN npm ci
 
 # Copiar o resto dos arquivos da aplicação
 COPY . .
@@ -79,12 +79,15 @@ COPY . .
 # Construir a aplicação
 RUN npm run build
 
-# Expor a porta que a aplicação usa
-EXPOSE 5000
+# Remover dependências de desenvolvimento após o build para reduzir o tamanho da imagem
+RUN npm ci --only=production
 
 # Script de inicialização para verificar a saúde do app antes de iniciar
-COPY docker-healthcheck.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-healthcheck.sh
+# (Nota: o arquivo já está copiado no passo COPY . . anterior)
+RUN cp docker-healthcheck.sh /usr/local/bin/ && chmod +x /usr/local/bin/docker-healthcheck.sh
+
+# Expor a porta que a aplicação usa
+EXPOSE 5000
 
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD [ "docker-healthcheck.sh" ]
 
