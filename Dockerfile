@@ -62,15 +62,16 @@ RUN apt-get update \
 # Definir variáveis de ambiente para o Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+ENV NODE_ENV=production
 
 # Preparar o diretório de trabalho
 WORKDIR /app
 
-# Copiar os arquivos de configuração do package.json e package-lock.json
+# Copiar arquivos para instalação de dependências
 COPY package*.json ./
 
-# Instalar dependências
-RUN npm ci
+# Instalar dependências de produção (skip dev dependencies)
+RUN npm ci --only=production
 
 # Copiar o resto dos arquivos da aplicação
 COPY . .
@@ -79,7 +80,13 @@ COPY . .
 RUN npm run build
 
 # Expor a porta que a aplicação usa
-EXPOSE 3000
+EXPOSE 5000
+
+# Script de inicialização para verificar a saúde do app antes de iniciar
+COPY docker-healthcheck.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-healthcheck.sh
+
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD [ "docker-healthcheck.sh" ]
 
 # Iniciar a aplicação
 CMD ["npm", "start"]
