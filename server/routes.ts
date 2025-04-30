@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
@@ -11,6 +11,11 @@ import multer from "multer";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Healthcheck endpoint for Railway
+  app.get("/health", (req, res) => {
+    res.status(200).json({ status: 'ok' });
+  });
+
   // Set up authentication routes
   setupAuth(app);
 
@@ -83,7 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 }
 
 // Middleware to check if user is authenticated
-function isAuthenticated(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
+function isAuthenticated(req: Request, res: Response, next: NextFunction) {
   if (req.isAuthenticated()) {
     return next();
   }
