@@ -1,103 +1,85 @@
-FROM node:20 AS base
+FROM node:20-slim
 
-# Definir diretório de trabalho
-WORKDIR /app
-
-# Instalar dependências necessárias para o Puppeteer
-RUN apt-get update && \
-    apt-get install -y \
-    chromium \
-    curl \
-    ca-certificates \
-    fonts-liberation \
-    libappindicator3-1 \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libc6 \
-    libcairo2 \
-    libcups2 \
-    libdbus-1-3 \
-    libexpat1 \
-    libfontconfig1 \
-    libgbm1 \
-    libgcc1 \
-    libglib2.0-0 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libstdc++6 \
-    libx11-6 \
-    libx11-xcb1 \
-    libxcb1 \
-    libxcomposite1 \
-    libxcursor1 \
-    libxdamage1 \
-    libxext6 \
-    libxfixes3 \
-    libxi6 \
-    libxrandr2 \
-    libxrender1 \
-    libxss1 \
-    libxtst6 \
-    lsb-release \
-    fonts-noto-color-emoji \
-    xdg-utils \
-    --no-install-recommends \
+# Instalar dependências para o Puppeteer
+RUN apt-get update \
+    && apt-get install -y wget gnupg \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        google-chrome-stable \
+        fonts-ipafont-gothic \
+        fonts-wqy-zenhei \
+        fonts-thai-tlwg \
+        fonts-kacst \
+        fonts-freefont-ttf \
+        libxss1 \
+        libxtst6 \
+        libatk-bridge2.0-0 \
+        libgtk-3-0 \
+        libasound2 \
+        libgbm1 \
+        libnss3 \
+        libxshmfence1 \
+        ca-certificates \
+        fonts-liberation \
+        libappindicator3-1 \
+        libasound2 \
+        libatk-bridge2.0-0 \
+        libatk1.0-0 \
+        libc6 \
+        libcairo2 \
+        libcups2 \
+        libdbus-1-3 \
+        libexpat1 \
+        libfontconfig1 \
+        libgcc1 \
+        libglib2.0-0 \
+        libgtk-3-0 \
+        libnspr4 \
+        libnss3 \
+        libpango-1.0-0 \
+        libpangocairo-1.0-0 \
+        libstdc++6 \
+        libx11-6 \
+        libx11-xcb1 \
+        libxcb1 \
+        libxcomposite1 \
+        libxcursor1 \
+        libxdamage1 \
+        libxext6 \
+        libxfixes3 \
+        libxi6 \
+        libxrandr2 \
+        libxrender1 \
+        libxss1 \
+        libxtst6 \
+        lsb-release \
+        wget \
+        xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Definir variáveis de ambiente para puppeteer
+# Definir variáveis de ambiente para o Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
-FROM base AS deps
+# Preparar o diretório de trabalho
+WORKDIR /app
 
-# Copiar somente os arquivos necessários para instalar as dependências
-COPY package.json package-lock.json ./
+# Copiar os arquivos de configuração do package.json e package-lock.json
+COPY package*.json ./
 
-# Instalar todas as dependências incluindo devDependencies
+# Instalar dependências
 RUN npm ci
 
-FROM base AS builder
-
-# Copiar os arquivos de dependências instalados
-COPY --from=deps /app/node_modules ./node_modules
+# Copiar o resto dos arquivos da aplicação
 COPY . .
 
-# Construir a aplicação (NODE_ENV=development para que as devDependencies estejam disponíveis)
-ENV NODE_ENV=development
-RUN npm run build || cat /tmp/vite-error.log
-
-FROM base AS runner
-
-# Definir variáveis de ambiente para produção
-ENV NODE_ENV=production
-
-# Copiar arquivos necessários
-COPY --from=builder /app/dist ./dist
-COPY --from=deps /app/node_modules ./node_modules
-COPY package.json package-lock.json ./
-
-# Criar arquivo .env com configurações básicas
-RUN echo "NODE_ENV=production" > .env && \
-    echo "PORT=5000" >> .env && \
-    echo "SESSION_SECRET=temp_secret_for_docker" >> .env && \
-    echo "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1" >> .env && \
-    echo "PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium" >> .env
-
-# Criar script de healthcheck
-RUN echo '#!/bin/sh' > /usr/local/bin/docker-healthcheck.sh && \
-    echo 'set -e' >> /usr/local/bin/docker-healthcheck.sh && \
-    echo 'curl -f http://localhost:5000/health || exit 1' >> /usr/local/bin/docker-healthcheck.sh && \
-    echo 'exit 0' >> /usr/local/bin/docker-healthcheck.sh && \
-    chmod +x /usr/local/bin/docker-healthcheck.sh
+# Construir a aplicação
+RUN npm run build
 
 # Expor a porta que a aplicação usa
-EXPOSE 5000
-
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD [ "docker-healthcheck.sh" ]
+EXPOSE 3000
 
 # Iniciar a aplicação
 CMD ["npm", "start"]
