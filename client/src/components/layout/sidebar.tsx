@@ -14,6 +14,7 @@ export default function Sidebar() {
     { path: "/contacts", label: "Contatos", icon: "ri-contacts-book-line" },
     { path: "/messages", label: "Mensagens", icon: "ri-message-2-line" },
     { path: "/schedule", label: "Agendamentos", icon: "ri-calendar-line" },
+    { path: "/whatsapp-setup", label: "Conexão WhatsApp", icon: "ri-whatsapp-line" },
     { path: "/reports", label: "Relatórios", icon: "ri-bar-chart-line" },
     { path: "/settings", label: "Configurações", icon: "ri-settings-line" },
   ];
