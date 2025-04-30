@@ -1,6 +1,6 @@
-import { Client } from "whatsapp-web.js";
+// import { Client } from "whatsapp-web.js";
 import { log } from "./vite";
-import qrcode from "qrcode";
+// import qrcode from "qrcode";
 import { EventEmitter } from "events";
 
 // Custom type for message with additional properties
@@ -12,8 +12,8 @@ type ScheduledMessage = {
   subject?: string;
 }
 
+// Mock WhatsApp client for development without system dependencies
 class WhatsAppClient extends EventEmitter {
-  private client: Client | null = null;
   private isInitialized = false;
   private isAuthenticated = false;
   private authenticatedUsers = new Set<number>();
@@ -26,22 +26,15 @@ class WhatsAppClient extends EventEmitter {
 
   private async initialize() {
     try {
-      log("Initializing WhatsApp client...", "whatsapp");
+      log("Initializing Mock WhatsApp client...", "whatsapp");
       
-      this.client = new Client({
-        puppeteer: {
-          args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-accelerated-2d-canvas",
-            "--no-first-run",
-            "--no-zygote",
-            "--single-process",
-            "--disable-gpu",
-          ],
-        },
-      });
+      // Mock successful initialization after a short delay
+      setTimeout(() => {
+        this.isInitialized = true;
+        this.isAuthenticated = true;
+        this.emit("ready");
+        log("Mock WhatsApp client is ready!", "whatsapp");
+      }, 2000);
 
       this.client.on("qr", (qr) => {
         log("QR Code received", "whatsapp");

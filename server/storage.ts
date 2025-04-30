@@ -393,3 +393,27 @@ export class MemStorage implements IStorage {
 }
 
 export const storage = new MemStorage();
+
+// Create an initial admin user for testing
+(async () => {
+  try {
+    // Check if admin user already exists
+    const existingUser = await storage.getUserByUsername('admin');
+    
+    if (existingUser) {
+      console.log('Admin user already exists!');
+      return;
+    }
+    
+    // Create admin user with a simple hash (for testing only)
+    const user = await storage.createUser({
+      username: 'admin',
+      password: 'admin123_hashed',
+      email: 'admin@example.com'
+    });
+    
+    console.log('Admin user created successfully:', user);
+  } catch (error) {
+    console.error('Error creating admin user:', error);
+  }
+})();
