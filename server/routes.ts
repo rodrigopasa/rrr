@@ -80,6 +80,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const status = whatsappClient.getStatus();
     res.json(status);
   });
+  
+  // WhatsApp QR code endpoint - NEEDS PROTECTION IN PRODUCTION!
+  app.get("/api/whatsapp/qrcode", isAuthenticated, (req, res) => {
+    const status = whatsappClient.getStatus();
+    if (status.qrCode) {
+      res.json({ qrCode: status.qrCode });
+    } else {
+      res.status(404).json({ message: "QR code not available" });
+    }
+  });
 
   // Initialize HTTP server
   const httpServer = createServer(app);
