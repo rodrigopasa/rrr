@@ -12,7 +12,7 @@ export default function QuickActions() {
       <Card className="col-span-2">
         <CardContent className="p-0">
           {/* New Message Card */}
-          <div className="bg-gradient-to-r from-[#4f46e5] to-[#6366f1] text-white rounded-lg p-6">
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg p-6">
             <h3 className="text-xl font-semibold mb-3">Ações Rápidas</h3>
             <p className="mb-4">
               Crie e envie mensagens para contatos individuais ou grupos agora
@@ -21,7 +21,7 @@ export default function QuickActions() {
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => setShowMessageComposer(true)}
-                className="py-2 px-4 bg-white text-[#4f46e5] rounded font-medium hover:bg-gray-100 transition-colors flex items-center"
+                className="py-2 px-4 bg-white text-orange-600 rounded font-medium hover:bg-gray-100 transition-colors flex items-center"
               >
                 <i className="ri-send-plane-fill mr-2"></i>
                 Nova Mensagem

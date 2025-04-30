@@ -20,7 +20,7 @@ export default function WhatsAppStatus() {
     <Card className="col-span-1">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center">
-          <i className="ri-whatsapp-line text-green-500 mr-2 text-xl"></i>
+          <i className="ri-whatsapp-line text-orange-500 mr-2 text-xl"></i>
           Status do WhatsApp
         </CardTitle>
       </CardHeader>
@@ -30,7 +30,7 @@ export default function WhatsAppStatus() {
         ) : (
           <div className="space-y-4">
             <div className="flex items-center">
-              <div className={`h-3 w-3 rounded-full mr-2 ${status?.isAuthenticated ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+              <div className={`h-3 w-3 rounded-full mr-2 ${status?.isAuthenticated ? 'bg-orange-500' : 'bg-yellow-500'}`}></div>
               <span className="text-sm font-medium">
                 {status?.isAuthenticated 
                   ? 'Conectado' 

@@ -37,8 +37,8 @@ export default function Sidebar() {
                 <a
                   className={`flex items-center p-3 rounded-lg mb-1 ${
                     location === item.path
-                      ? "bg-gray-800 text-white"
-                      : "hover:bg-gray-800 transition-colors"
+                      ? "bg-orange-600 text-white"
+                      : "hover:bg-gray-800 hover:text-orange-400 transition-colors"
                   }`}
                 >
                   <i className={`${item.icon} mr-3`}></i>

@@ -66,8 +66,8 @@ export default function WhatsAppQRCodeSetup() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : data?.isAuthenticated ? (
-          <div className="text-center p-6 bg-green-50 dark:bg-green-900/20 rounded-md w-full">
-            <div className="text-green-600 dark:text-green-400 text-lg font-medium">
+          <div className="text-center p-6 bg-orange-50 dark:bg-orange-900/20 rounded-md w-full">
+            <div className="text-orange-600 dark:text-orange-400 text-lg font-medium">
               ✓ WhatsApp Conectado
             </div>
             <p className="text-sm text-muted-foreground mt-2">
