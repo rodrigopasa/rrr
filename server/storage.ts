@@ -58,7 +58,7 @@ export class MemStorage implements IStorage {
   private messagesStore: Map<number, Message>;
   private messageRecipientsStore: Map<number, MessageRecipient>;
   currentId: number;
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Fix type issue with session store
 
   constructor() {
     this.users = new Map();

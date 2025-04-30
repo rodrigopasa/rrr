@@ -4,6 +4,7 @@ import StatsCard from "@/components/dashboard/stats-card";
 import QuickActions from "@/components/dashboard/quick-actions";
 import RecentMessages from "@/components/dashboard/recent-messages";
 import UpcomingSchedules from "@/components/dashboard/upcoming-schedules";
+import WhatsAppStatus from "@/components/dashboard/whatsapp-status";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -105,7 +106,10 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <QuickActions />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <QuickActions />
+            <WhatsAppStatus />
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <RecentMessages />
