@@ -3,6 +3,11 @@ import type { User, InsertUser, Contact, InsertContact, ContactGroup, InsertCont
 import { db } from "./db";
 import { eq, and, like, desc, or, isNull, not } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import { pool } from "./db";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+
+const PostgresStore = connectPg(session);
 
 export interface IStorage {
   // User operations
@@ -49,7 +54,14 @@ export interface IStorage {
 
 // Use o banco de dados para armazenamento persistente
 export class DatabaseStorage implements IStorage {
-  sessionStore: any; // Esse objeto será configurado no setup da autenticação
+  sessionStore: any;
+  
+  constructor() {
+    this.sessionStore = new PostgresStore({
+      pool,
+      createTableIfMissing: true
+    });
+  }
 
   async getUser(id: number): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
