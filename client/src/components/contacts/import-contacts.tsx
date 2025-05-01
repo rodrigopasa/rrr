@@ -117,24 +117,47 @@ export default function ImportContacts({ onClose }: ImportContactsProps) {
         <div className="p-6">
           <div className="mb-6">
             <h3 className="font-medium mb-2">Selecionar Arquivo</h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-gray-600 mb-2">
               Importe seus contatos a partir de um arquivo CSV ou Excel.{" "}
-              <a href="#" className="text-[#4f46e5]">
+              <a href="#" className="text-blue-500 hover:text-orange-500 transition-colors">
                 Baixar modelo
               </a>
             </p>
+            <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mb-4">
+              <h4 className="text-sm font-medium text-orange-800 flex items-center mb-2">
+                <i className="ri-information-line mr-1.5"></i>
+                Instruções para formatação do arquivo
+              </h4>
+              <ul className="text-xs text-orange-700 space-y-1 list-disc pl-4">
+                <li>Certifique-se que seu arquivo CSV tenha as colunas: <span className="font-mono bg-orange-100 px-1 rounded">nome</span>, <span className="font-mono bg-orange-100 px-1 rounded">telefone</span> (obrigatórias) e <span className="font-mono bg-orange-100 px-1 rounded">grupo</span> (opcional)</li>
+                <li>Os números de telefone devem estar no formato internacional: começando com "+" seguido do código do país (Ex: +5511999999999)</li>
+                <li>Evite caracteres especiais nos nomes (acentos são permitidos)</li>
+                <li>Se estiver usando vírgulas no nome, certifique-se de usar aspas duplas em volta do texto</li>
+                <li>Para delimitar colunas, use vírgula (,) ou ponto e vírgula (;)</li>
+                <li>Tamanho máximo do arquivo: 5MB</li>
+              </ul>
+              <div className="mt-2 text-xs text-orange-700">
+                <strong>Exemplo de arquivo CSV:</strong>
+                <pre className="bg-orange-100 p-2 rounded mt-1 overflow-x-auto">
+                  nome,telefone,grupo<br/>
+                  "João Silva",+5511999887766,Clientes<br/>
+                  "Maria Oliveira",+5511988776655,Fornecedores<br/>
+                  "Carlos Pereira",+5511977665544,Clientes
+                </pre>
+              </div>
+            </div>
 
             <div
               className={`border-2 ${
-                isDragging ? "border-[#4f46e5]" : "border-dashed border-gray-300"
-              } rounded-lg p-8 text-center`}
+                isDragging ? "border-blue-500 bg-blue-50" : "border-dashed border-gray-300"
+              } rounded-lg p-8 text-center transition-colors duration-200`}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
             >
               {file ? (
                 <div className="flex flex-col items-center">
-                  <i className="ri-file-line text-4xl text-[#4f46e5] mb-2"></i>
+                  <i className="ri-file-line text-4xl text-blue-500 mb-2"></i>
                   <p className="font-medium mb-1">{file.name}</p>
                   <p className="text-sm text-gray-500 mb-4">
                     {(file.size / 1024).toFixed(2)} KB
@@ -155,7 +178,7 @@ export default function ImportContacts({ onClose }: ImportContactsProps) {
                   </p>
                   <Button 
                     onClick={handleFileButtonClick}
-                    className="bg-[#4f46e5] hover:bg-[#4f46e5]/90"
+                    className="bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 transition-all duration-300"
                   >
                     Selecionar Arquivo
                   </Button>
@@ -230,7 +253,7 @@ export default function ImportContacts({ onClose }: ImportContactsProps) {
           <Button
             onClick={handleImportContacts}
             disabled={!file || isLoading}
-            className="bg-[#4f46e5] hover:bg-[#4f46e5]/90"
+            className="bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 transition-all duration-300"
           >
             {isLoading ? (
               <span className="flex items-center">
