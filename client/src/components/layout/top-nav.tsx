@@ -6,7 +6,7 @@ export default function TopNav() {
     <header className="bg-white border-b border-gray-200 flex items-center justify-between p-4 md:py-2">
       <div className="flex items-center md:hidden">
         <MobileMenu />
-        <h1 className="text-xl font-semibold ml-2">WhatsApp Sender</h1>
+        <h1 className="text-xl font-semibold ml-2 bg-gradient-to-r from-blue-500 to-orange-500 bg-clip-text text-transparent">Automizap</h1>
       </div>
       <div className="flex items-center ml-auto">
         <div className="relative mr-3">

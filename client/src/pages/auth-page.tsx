@@ -76,8 +76,8 @@ export default function AuthPage() {
       <div className="w-full lg:w-1/2 p-8 flex flex-col justify-center items-center">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <i className="ri-chat-3-line text-[#f97316] text-4xl mb-4"></i>
-            <h2 className="text-2xl font-bold">WhatsApp Sender</h2>
+            <i className="ri-whatsapp-line text-[#25D366] text-4xl mb-4"></i>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-orange-500 bg-clip-text text-transparent">Automizap</h2>
             <p className="text-gray-600">
               {isLogin ? "Faça login para continuar" : "Crie sua conta"}
             </p>
@@ -129,7 +129,7 @@ export default function AuthPage() {
                 <div className="mt-1 text-right">
                   <a
                     href="#"
-                    className="text-sm text-[#4f46e5] hover:text-[#4f46e5]/80"
+                    className="text-sm text-orange-500 hover:text-orange-600"
                   >
                     Esqueceu a senha?
                   </a>
@@ -137,7 +137,7 @@ export default function AuthPage() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-[#4f46e5] hover:bg-[#4f46e5]/90"
+                  className="w-full bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 transition-all duration-300"
                   disabled={loginMutation.isPending}
                 >
                   {loginMutation.isPending ? (
@@ -215,7 +215,7 @@ export default function AuthPage() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-[#4f46e5] hover:bg-[#4f46e5]/90"
+                  className="w-full bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 transition-all duration-300"
                   disabled={registerMutation.isPending}
                 >
                   {registerMutation.isPending ? (
@@ -236,7 +236,7 @@ export default function AuthPage() {
               {isLogin ? "Não tem uma conta? " : "Já tem uma conta? "}
             </span>
             <button
-              className="text-sm text-[#4f46e5] hover:text-[#4f46e5]/80 font-medium"
+              className="text-sm text-blue-500 hover:text-orange-500 transition-colors font-medium"
               onClick={() => setIsLogin(!isLogin)}
             >
               {isLogin ? "Cadastre-se" : "Faça login"}
