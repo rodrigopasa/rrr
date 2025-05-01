@@ -72,7 +72,9 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
 export const messageRecipients = pgTable("message_recipients", {
   id: serial("id").primaryKey(),
   messageId: integer("message_id").notNull().references(() => messages.id),
-  contactId: integer("contact_id").notNull().references(() => contacts.id),
+  contactId: integer("contact_id").references(() => contacts.id),
+  phoneNumber: text("phone_number"), // Para números digitados diretamente
+  type: text("type").notNull().default("contact"), // contact, phone, group
   status: text("status").notNull().default("pending"), // pending, sent, delivered, failed
   sentAt: timestamp("sent_at"),
   deliveredAt: timestamp("delivered_at"),
@@ -82,6 +84,8 @@ export const messageRecipients = pgTable("message_recipients", {
 export const insertMessageRecipientSchema = createInsertSchema(messageRecipients).pick({
   messageId: true,
   contactId: true,
+  phoneNumber: true,
+  type: true,
   status: true,
 });
 

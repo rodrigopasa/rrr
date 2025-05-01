@@ -3,10 +3,17 @@ import TopNav from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Search, RefreshCw, Send, Trash2 } from "lucide-react";
+import { Search, RefreshCw, Send, Trash2, Smartphone, Users, X } from "lucide-react";
 import MessageComposer from "@/components/message/message-composer";
+import DirectMessageForm from "@/components/message/direct-message-form";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -28,6 +35,8 @@ export default function MessagesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState("all");
   const [showComposer, setShowComposer] = useState(false);
+  const [showDirectForm, setShowDirectForm] = useState(false);
+  const [composerMode, setComposerMode] = useState<"normal" | "direct">("normal");
 
   // Query for messages
   const { data: messages, isLoading, refetch } = useQuery<Message[]>({
@@ -236,7 +245,89 @@ export default function MessagesPage() {
         </main>
       </div>
 
-      {showComposer && <MessageComposer onClose={() => setShowComposer(false)} />}
+      {/* Modal para escolher o tipo de mensagem */}
+      {showComposer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold">Escolha como enviar sua mensagem</h2>
+            </div>
+            
+            <div className="p-6 grid grid-cols-1 gap-4">
+              <div 
+                className="border rounded-lg p-4 hover:border-blue-500 cursor-pointer transition-all flex items-center"
+                onClick={() => {
+                  setComposerMode("normal");
+                  setShowComposer(false);
+                  setShowDirectForm(false);
+                  // Mostra o compositor padrão para contatos/grupos
+                  setTimeout(() => setShowComposer(true), 100);
+                }}
+              >
+                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center mr-4">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-medium">Contatos e Grupos</h3>
+                  <p className="text-sm text-gray-500">Selecione destinatários dos seus contatos ou grupos</p>
+                </div>
+              </div>
+              
+              <div 
+                className="border rounded-lg p-4 hover:border-orange-500 cursor-pointer transition-all flex items-center"
+                onClick={() => {
+                  setComposerMode("direct");
+                  setShowComposer(false);
+                  // Mostra o formulário para digitar números diretamente
+                  setShowDirectForm(true);
+                }}
+              >
+                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center mr-4">
+                  <Smartphone className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-medium">Digitar Números</h3>
+                  <p className="text-sm text-gray-500">Digite manualmente os números para enviar a mensagem</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 border-t border-gray-200 flex justify-end">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowComposer(false)}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para contatos/grupos selecionados */}
+      {!showComposer && composerMode === "normal" && showComposer && (
+        <MessageComposer onClose={() => {
+          setShowComposer(false);
+          setComposerMode("normal");
+        }} />
+      )}
+      
+      {/* Modal para números digitados diretamente */}
+      {showDirectForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-xl font-bold">Enviar Mensagem Direta</h2>
+              <button className="text-gray-500 hover:text-gray-700" onClick={() => setShowDirectForm(false)}>
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6 flex-1 overflow-y-auto">
+              <DirectMessageForm />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

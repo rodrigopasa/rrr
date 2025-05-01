@@ -15,7 +15,7 @@ import {
   Users, RefreshCw, Search, UserPlus, MessageSquare, 
   Phone, User, UsersRound, ArrowRight, Info, Send,
   Calendar, Star, Tag, Filter, CheckCircle, Plus, Clock,
-  PlusCircle, ListFilter, MessageCircle, CalendarClock
+  PlusCircle, ListFilter, MessageCircle, CalendarClock, X
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
