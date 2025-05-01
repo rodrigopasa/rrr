@@ -246,7 +246,7 @@ export default function AuthPage() {
       </div>
 
       {/* Right side (Hero) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-r from-[#4f46e5] to-[#6366f1] text-white p-12 flex-col justify-center">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-r from-blue-600 to-orange-500 text-white p-12 flex-col justify-center">
         <div>
           <h1 className="text-4xl font-bold mb-6">
             Gerencie suas conversas no WhatsApp com facilidade
@@ -257,7 +257,7 @@ export default function AuthPage() {
           </p>
           <div className="space-y-4">
             <div className="flex items-start">
-              <div className="bg-white/20 p-2 rounded-full mr-4">
+              <div className="bg-orange-400/30 p-3 rounded-full mr-4 backdrop-blur-sm">
                 <i className="ri-contacts-book-line text-xl"></i>
               </div>
               <div>
@@ -268,7 +268,7 @@ export default function AuthPage() {
               </div>
             </div>
             <div className="flex items-start">
-              <div className="bg-white/20 p-2 rounded-full mr-4">
+              <div className="bg-blue-400/30 p-3 rounded-full mr-4 backdrop-blur-sm">
                 <i className="ri-message-2-line text-xl"></i>
               </div>
               <div>
@@ -279,7 +279,7 @@ export default function AuthPage() {
               </div>
             </div>
             <div className="flex items-start">
-              <div className="bg-white/20 p-2 rounded-full mr-4">
+              <div className="bg-orange-400/30 p-3 rounded-full mr-4 backdrop-blur-sm">
                 <i className="ri-calendar-line text-xl"></i>
               </div>
               <div>
