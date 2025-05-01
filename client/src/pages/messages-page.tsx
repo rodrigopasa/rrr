@@ -3,9 +3,10 @@ import TopNav from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Search, RefreshCw, Send, Trash2, Smartphone, Users, X } from "lucide-react";
+import { Search, RefreshCw, Send, Trash2, Smartphone, Users, X, UsersRound } from "lucide-react";
 import MessageComposer from "@/components/message/message-composer";
 import DirectMessageForm from "@/components/message/direct-message-form";
+import GroupMessageForm from "@/components/message/group-message-form";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -36,7 +37,8 @@ export default function MessagesPage() {
   const [filter, setFilter] = useState("all");
   const [showComposer, setShowComposer] = useState(false);
   const [showDirectForm, setShowDirectForm] = useState(false);
-  const [composerMode, setComposerMode] = useState<"normal" | "direct">("normal");
+  const [showGroupForm, setShowGroupForm] = useState(false); 
+  const [composerMode, setComposerMode] = useState<"normal" | "direct" | "group">("normal");
 
   // Query for messages
   const { data: messages, isLoading, refetch } = useQuery<Message[]>({
@@ -260,6 +262,7 @@ export default function MessagesPage() {
                   setComposerMode("normal");
                   setShowComposer(false);
                   setShowDirectForm(false);
+                  setShowGroupForm(false);
                   // Mostra o compositor padrão para contatos/grupos
                   setTimeout(() => setShowComposer(true), 100);
                 }}
@@ -278,6 +281,7 @@ export default function MessagesPage() {
                 onClick={() => {
                   setComposerMode("direct");
                   setShowComposer(false);
+                  setShowGroupForm(false);
                   // Mostra o formulário para digitar números diretamente
                   setShowDirectForm(true);
                 }}
@@ -288,6 +292,25 @@ export default function MessagesPage() {
                 <div>
                   <h3 className="font-medium">Digitar Números</h3>
                   <p className="text-sm text-gray-500">Digite manualmente os números para enviar a mensagem</p>
+                </div>
+              </div>
+              
+              <div 
+                className="border rounded-lg p-4 hover:border-blue-500 cursor-pointer transition-all flex items-center"
+                onClick={() => {
+                  setComposerMode("group");
+                  setShowComposer(false);
+                  setShowDirectForm(false);
+                  // Mostra o formulário específico para grupos
+                  setShowGroupForm(true);
+                }}
+              >
+                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center mr-4">
+                  <UsersRound className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-medium">Grupos de WhatsApp</h3>
+                  <p className="text-sm text-gray-500">Selecione grupos específicos do WhatsApp para enviar mensagens</p>
                 </div>
               </div>
             </div>
@@ -324,6 +347,23 @@ export default function MessagesPage() {
             </div>
             <div className="p-6 flex-1 overflow-y-auto">
               <DirectMessageForm />
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal para seleção e envio de mensagens para grupos */}
+      {showGroupForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-xl font-bold">Enviar Mensagem para Grupos</h2>
+              <button className="text-gray-500 hover:text-gray-700" onClick={() => setShowGroupForm(false)}>
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6 flex-1 overflow-y-auto">
+              <GroupMessageForm onClose={() => setShowGroupForm(false)} />
             </div>
           </div>
         </div>
