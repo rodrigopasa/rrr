@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { handleImportContacts } from "./controllers/contact-controller";
-import { handleSendMessage, getRecentMessages, getAllMessages } from "./controllers/message-controller";
+import { handleSendMessage, handleSendDirectMessage, getRecentMessages, getAllMessages } from "./controllers/message-controller";
 import { getDashboardStats } from "./controllers/dashboard-controller";
 import { getUpcomingSchedules, getAllSchedules } from "./controllers/schedule-controller";
 import { whatsappClient } from "./whatsapp";
@@ -65,6 +65,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Messages API routes
   app.post("/api/messages/send", isAuthenticated, handleSendMessage);
+  
+  // Endpoint para enviar mensagens diretamente para números de telefone
+  app.post("/api/whatsapp/send", isAuthenticated, handleSendDirectMessage);
   
   app.get("/api/messages/recent", isAuthenticated, getRecentMessages);
   

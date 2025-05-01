@@ -66,6 +66,8 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   content: true,
   isScheduled: true,
   scheduledAt: true,
+  status: true,
+  sentAt: true,
 });
 
 // Message Recipient schema (for tracking recipients of each message)
