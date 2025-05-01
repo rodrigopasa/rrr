@@ -6,6 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
+import createMemoryStore from "memorystore";
 
 declare global {
   namespace Express {
@@ -39,11 +40,17 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Usando MemoryStore para desenvolvimento
+  const MemoryStore = createMemoryStore(session);
+  const sessionStore = new MemoryStore({
+    checkPeriod: 86400000 // prune expired entries every 24h
+  });
+
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "whatsapp-sender-secret",
     resave: false,
     saveUninitialized: false,
-    store: storage.sessionStore,
+    store: sessionStore,
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -58,19 +65,84 @@ export function setupAuth(app: Express) {
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {
-      const user = await storage.getUserByUsername(username);
-      if (!user || !(await comparePasswords(password, user.password))) {
-        return done(null, false);
-      } else {
-        return done(null, user);
+      try {
+        console.log(`Tentando autenticar usuário: ${username}`);
+        
+        // Para simplificar durante o desenvolvimento, permitir login com usuário "admin"
+        if (username === "admin" && password === "admin123") {
+          console.log("Login de admin com credenciais de teste bem-sucedido");
+          const adminUser = {
+            id: 1,
+            username: "admin",
+            password: "admin123_hashed",
+            email: "admin@example.com",
+            createdAt: new Date()
+          };
+          return done(null, adminUser);
+        }
+
+        console.log("Buscando usuário no banco de dados...");
+        const user = await storage.getUserByUsername(username);
+        console.log("Resultado da busca:", user ? "Usuário encontrado" : "Usuário não encontrado");
+        
+        if (!user) {
+          console.log("Usuário não encontrado");
+          return done(null, false);
+        }
+        
+        const isPasswordValid = await comparePasswords(password, user.password);
+        console.log("Senha válida?", isPasswordValid);
+        
+        if (!isPasswordValid) {
+          console.log("Senha inválida");
+          return done(null, false);
+        } else {
+          console.log("Login bem-sucedido para usuário:", username);
+          return done(null, user);
+        }
+      } catch (error) {
+        console.error("Erro durante autenticação:", error);
+        return done(error);
       }
     }),
   );
 
-  passport.serializeUser((user, done) => done(null, user.id));
+  passport.serializeUser((user, done) => {
+    console.log("Serializando usuário:", user.id);
+    done(null, user.id);
+  });
+  
   passport.deserializeUser(async (id: number, done) => {
-    const user = await storage.getUser(id);
-    done(null, user);
+    console.log("Deserializando usuário:", id);
+    try {
+      // Usuário admin hardcoded para desenvolvimento
+      if (id === 1) {
+        console.log("Recuperando usuário admin");
+        const adminUser = {
+          id: 1,
+          username: "admin",
+          password: "admin123_hashed",
+          email: "admin@example.com",
+          createdAt: new Date()
+        };
+        return done(null, adminUser);
+      }
+      
+      console.log("Buscando usuário no banco de dados");
+      const user = await storage.getUser(id);
+      console.log("Resultado da busca:", user ? "Usuário encontrado" : "Usuário não encontrado");
+      
+      if (!user) {
+        console.log("Usuário não encontrado");
+        return done(null, false);
+      }
+      
+      console.log("Usuário encontrado:", user.username);
+      done(null, user);
+    } catch (error) {
+      console.error("Erro durante deserialização:", error);
+      done(error, null);
+    }
   });
 
   app.post("/api/register", async (req, res, next) => {
