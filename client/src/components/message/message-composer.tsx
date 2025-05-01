@@ -11,7 +11,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Eye, EyeOff } from "lucide-react";
+import MessagePreview from "./message-preview";
 
 interface MessageComposerProps {
   onClose: () => void;
@@ -30,6 +31,7 @@ export default function MessageComposer({ onClose }: MessageComposerProps) {
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [time, setTime] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const handleRemoveContact = (contact: string) => {
     setSelectedContacts(selectedContacts.filter((c) => c !== contact));
@@ -130,7 +132,7 @@ export default function MessageComposer({ onClose }: MessageComposerProps) {
                     <button
                       className={`py-2 px-3 rounded border flex items-center justify-center text-sm ${
                         sendType === "individual"
-                          ? "bg-[#4f46e5] text-white border-[#4f46e5]"
+                          ? "bg-gradient-to-r from-blue-500 to-orange-500 text-white border-transparent"
                           : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                       }`}
                       onClick={() => setSendType("individual")}
@@ -141,7 +143,7 @@ export default function MessageComposer({ onClose }: MessageComposerProps) {
                     <button
                       className={`py-2 px-3 rounded border flex items-center justify-center text-sm ${
                         sendType === "group"
-                          ? "bg-[#4f46e5] text-white border-[#4f46e5]"
+                          ? "bg-gradient-to-r from-blue-500 to-orange-500 text-white border-transparent"
                           : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                       }`}
                       onClick={() => setSendType("group")}
@@ -231,44 +233,75 @@ export default function MessageComposer({ onClose }: MessageComposerProps) {
 
                 {/* Message Body */}
                 <div>
-                  <Label htmlFor="message-body" className="mb-1">
-                    Mensagem
-                  </Label>
-
-                  {/* Toolbar */}
-                  <div className="flex flex-wrap border border-gray-300 border-b-0 rounded-t-md bg-gray-50 p-2">
-                    <button className="p-1 text-gray-700 hover:bg-gray-200 rounded mr-1">
-                      <i className="ri-bold"></i>
-                    </button>
-                    <button className="p-1 text-gray-700 hover:bg-gray-200 rounded mr-1">
-                      <i className="ri-italic"></i>
-                    </button>
-                    <button className="p-1 text-gray-700 hover:bg-gray-200 rounded mr-1">
-                      <i className="ri-underline"></i>
-                    </button>
-                    <button className="p-1 text-gray-700 hover:bg-gray-200 rounded mr-1">
-                      <i className="ri-link"></i>
-                    </button>
-                    <button className="p-1 text-gray-700 hover:bg-gray-200 rounded mr-1">
-                      <i className="ri-emotion-line"></i>
-                    </button>
-                    <button className="p-1 text-gray-700 hover:bg-gray-200 rounded mr-1">
-                      <i className="ri-image-line"></i>
-                    </button>
-                    <button className="p-1 text-gray-700 hover:bg-gray-200 rounded mr-1">
-                      <i className="ri-file-line"></i>
-                    </button>
+                  <div className="flex justify-between items-center mb-1">
+                    <Label htmlFor="message-body">
+                      Mensagem
+                    </Label>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowPreview(!showPreview)}
+                      className={`h-8 text-xs border-gray-300 ${showPreview ? 'text-orange-500 hover:text-orange-600 hover:border-orange-500' : 'text-blue-500 hover:text-blue-600 hover:border-blue-500'}`}
+                    >
+                      {showPreview ? (
+                        <span className="flex items-center gap-1">
+                          <EyeOff className="h-3 w-3" />
+                          Ocultar Visualização
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          Pré-visualizar
+                        </span>
+                      )}
+                    </Button>
                   </div>
 
-                  {/* Text Area */}
-                  <Textarea
-                    id="message-body"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Digite sua mensagem aqui..."
-                    rows={6}
-                    className="rounded-t-none"
-                  />
+                  {showPreview ? (
+                    <div className="mt-2 mb-3">
+                      <MessagePreview 
+                        content={message} 
+                        recipientName={selectedContacts.length > 0 ? selectedContacts[0] : "Destinatário"}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      {/* Toolbar */}
+                      <div className="flex flex-wrap border border-gray-300 border-b-0 rounded-t-md bg-gray-50 p-2">
+                        <button className="p-1 text-gray-700 hover:bg-gray-200 rounded mr-1">
+                          <i className="ri-bold"></i>
+                        </button>
+                        <button className="p-1 text-gray-700 hover:bg-gray-200 rounded mr-1">
+                          <i className="ri-italic"></i>
+                        </button>
+                        <button className="p-1 text-gray-700 hover:bg-gray-200 rounded mr-1">
+                          <i className="ri-underline"></i>
+                        </button>
+                        <button className="p-1 text-gray-700 hover:bg-gray-200 rounded mr-1">
+                          <i className="ri-link"></i>
+                        </button>
+                        <button className="p-1 text-gray-700 hover:bg-gray-200 rounded mr-1">
+                          <i className="ri-emotion-line"></i>
+                        </button>
+                        <button className="p-1 text-gray-700 hover:bg-gray-200 rounded mr-1">
+                          <i className="ri-image-line"></i>
+                        </button>
+                        <button className="p-1 text-gray-700 hover:bg-gray-200 rounded mr-1">
+                          <i className="ri-file-line"></i>
+                        </button>
+                      </div>
+
+                      {/* Text Area */}
+                      <Textarea
+                        id="message-body"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        placeholder="Digite sua mensagem aqui..."
+                        rows={6}
+                        className="rounded-t-none"
+                      />
+                    </>
+                  )}
                 </div>
 
                 {/* Scheduling */}
@@ -344,7 +377,7 @@ export default function MessageComposer({ onClose }: MessageComposerProps) {
           <Button 
             disabled={isSending}
             onClick={handleSendMessage}
-            className="bg-[#4f46e5] hover:bg-[#4f46e5]/90"
+            className="bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 transition-all duration-300"
           >
             {isSending ? (
               <span className="flex items-center">
