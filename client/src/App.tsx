@@ -9,6 +9,8 @@ import SchedulePage from "@/pages/schedule-page";
 import WhatsAppSetupPage from "@/pages/whatsapp-setup-page";
 import WhatsAppGroupsContactsPage from "@/pages/whatsapp-groups-contacts-page";
 import ReportsPage from "@/pages/reports-page";
+import CampaignManagerPage from "@/pages/campaign-manager-page";
+import MessageTemplatesPage from "@/pages/message-templates-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -22,6 +24,8 @@ function Router() {
       <ProtectedRoute path="/whatsapp-setup" component={WhatsAppSetupPage} />
       <ProtectedRoute path="/whatsapp-groups-contacts" component={WhatsAppGroupsContactsPage} />
       <ProtectedRoute path="/reports" component={ReportsPage} />
+      <ProtectedRoute path="/campaign-manager" component={CampaignManagerPage} />
+      <ProtectedRoute path="/message-templates" component={MessageTemplatesPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

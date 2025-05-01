@@ -14,10 +14,12 @@ export default function Sidebar() {
     { path: "/", label: "Dashboard", icon: "ri-dashboard-line" },
     { path: "/contacts", label: "Contatos", icon: "ri-contacts-book-line" },
     { path: "/messages", label: "Mensagens", icon: "ri-message-2-line" },
+    { path: "/campaign-manager", label: "Campanhas", icon: "ri-megaphone-line", badge: "Novo" },
     { path: "/schedule", label: "Agendamentos", icon: "ri-calendar-line" },
     { path: "/whatsapp-setup", label: "Conexão WhatsApp", icon: "ri-whatsapp-line" },
     { path: "/whatsapp-groups-contacts", label: "Grupos & Contatos", icon: "ri-group-line" },
     { path: "/reports", label: "Relatórios", icon: "ri-bar-chart-line" },
+    { path: "/message-templates", label: "Templates", icon: "ri-file-list-3-line", badge: "Novo" },
     { path: "/settings", label: "Configurações", icon: "ri-settings-line" },
   ];
 
@@ -44,6 +46,11 @@ export default function Sidebar() {
                 >
                   <i className={`${item.icon} mr-3`}></i>
                   <span>{item.label}</span>
+                  {item.badge && (
+                    <span className="ml-2 text-xs px-1.5 py-0.5 rounded-md bg-orange-500 text-white font-medium">
+                      {item.badge}
+                    </span>
+                  )}
                 </a>
               </Link>
             </li>
