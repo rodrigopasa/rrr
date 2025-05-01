@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -18,7 +20,6 @@ import {
   Send, Users, Loader2, CheckCircle2, ListChecks, 
   Clock, Search, X, Info
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import MessagePreview from "./message-preview";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +42,10 @@ interface WhatsAppGroup {
 // Validação de formulário
 const formSchema = z.object({
   message: z.string().min(1, "A mensagem não pode estar vazia"),
-  groupIds: z.array(z.string()).min(1, "Selecione ao menos um grupo")
+  groupIds: z.array(z.string()).min(1, "Selecione ao menos um grupo"),
+  isScheduled: z.boolean().default(false),
+  scheduledDate: z.string().optional(),
+  scheduledTime: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -53,6 +57,9 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [sendingProgress, setSendingProgress] = useState({ total: 0, sent: 0, failed: 0 });
+  
+  // Estados para agendamento
+  const [isScheduled, setIsScheduled] = useState(false);
 
   // Buscar grupos do WhatsApp
   const { data: groups = [], isLoading: isLoadingGroups } = useQuery<WhatsAppGroup[]>({
@@ -73,7 +80,10 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
     resolver: zodResolver(formSchema),
     defaultValues: {
       message: "",
-      groupIds: []
+      groupIds: [],
+      isScheduled: false,
+      scheduledDate: "",
+      scheduledTime: ""
     },
   });
 
@@ -114,7 +124,7 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
     try {
       setIsSending(true);
       
-      const { message, groupIds } = data;
+      const { message, groupIds, isScheduled, scheduledDate, scheduledTime } = data;
       
       if (groupIds.length === 0) {
         toast({
@@ -126,6 +136,31 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
         return;
       }
       
+      // Validar agendamento se estiver ativado
+      if (isScheduled) {
+        if (!scheduledDate || !scheduledTime) {
+          toast({
+            title: "Erro de agendamento",
+            description: "Por favor, preencha a data e hora de agendamento",
+            variant: "destructive",
+          });
+          setIsSending(false);
+          return;
+        }
+        
+        // Verificar se a data e hora são futuras
+        const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+        if (scheduledDateTime <= new Date()) {
+          toast({
+            title: "Erro de agendamento",
+            description: "A data e hora de agendamento devem ser futuras",
+            variant: "destructive",
+          });
+          setIsSending(false);
+          return;
+        }
+      }
+      
       // Inicializar contador
       setSendingProgress({
         total: groupIds.length,
@@ -133,50 +168,93 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
         failed: 0
       });
       
-      // Enviar mensagem para cada grupo
-      for (const groupId of groupIds) {
+      if (isScheduled) {
+        // Agendar mensagens para envio futuro
         try {
-          const response = await fetch('/api/whatsapp/send-to-group', {
+          const response = await fetch('/api/whatsapp/schedule-group-messages', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              groupId,
-              message
+              groupIds,
+              message,
+              scheduledDate,
+              scheduledTime
             }),
           });
           
           if (response.ok) {
-            setSendingProgress(prev => ({ ...prev, sent: prev.sent + 1 }));
+            toast({
+              title: "Mensagens agendadas com sucesso",
+              description: `As mensagens para ${groupIds.length} grupos foram agendadas para ${scheduledDate} às ${scheduledTime}`,
+              variant: "default",
+            });
+            
+            form.reset();
+            setSelectedGroups([]);
+            setIsScheduled(false);
+            
+            // Atualizar a lista de agendamentos, se necessário
+            queryClient.invalidateQueries({ queryKey: ['/api/schedules'] });
           } else {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Erro ao agendar mensagens");
+          }
+        } catch (error) {
+          console.error("Erro ao agendar mensagens:", error);
+          toast({
+            title: "Erro ao agendar mensagens",
+            description: error instanceof Error ? error.message : "Ocorreu um erro ao agendar as mensagens para os grupos",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Enviar mensagem para cada grupo imediatamente
+        for (const groupId of groupIds) {
+          try {
+            const response = await fetch('/api/whatsapp/send-to-group', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                groupId,
+                message
+              }),
+            });
+            
+            if (response.ok) {
+              setSendingProgress(prev => ({ ...prev, sent: prev.sent + 1 }));
+            } else {
+              setSendingProgress(prev => ({ ...prev, failed: prev.failed + 1 }));
+            }
+            
+            // Adicionar pequeno delay entre os envios
+            await new Promise(resolve => setTimeout(resolve, 300));
+          } catch (error) {
+            console.error(`Erro ao enviar mensagem para grupo ${groupId}:`, error);
             setSendingProgress(prev => ({ ...prev, failed: prev.failed + 1 }));
           }
-          
-          // Adicionar pequeno delay entre os envios
-          await new Promise(resolve => setTimeout(resolve, 300));
-        } catch (error) {
-          console.error(`Erro ao enviar mensagem para grupo ${groupId}:`, error);
-          setSendingProgress(prev => ({ ...prev, failed: prev.failed + 1 }));
+        }
+        
+        toast({
+          title: "Mensagens enviadas para grupos",
+          description: `Enviadas: ${sendingProgress.sent}, Falhas: ${sendingProgress.failed}`,
+          variant: sendingProgress.failed === 0 ? "default" : "destructive",
+        });
+        
+        // Se houve algum envio bem-sucedido, limpar o formulário
+        if (sendingProgress.sent > 0) {
+          form.reset();
+          setSelectedGroups([]);
         }
       }
-      
-      toast({
-        title: "Mensagens enviadas para grupos",
-        description: `Enviadas: ${sendingProgress.sent}, Falhas: ${sendingProgress.failed}`,
-        variant: sendingProgress.failed === 0 ? "default" : "destructive",
-      });
-      
-      // Se houve algum envio bem-sucedido, limpar o formulário
-      if (sendingProgress.sent > 0) {
-        form.reset();
-        setSelectedGroups([]);
-      }
     } catch (error) {
-      console.error("Erro ao enviar mensagens:", error);
+      console.error("Erro ao processar mensagens:", error);
       toast({
-        title: "Erro ao enviar mensagens",
-        description: "Ocorreu um erro ao tentar enviar as mensagens para os grupos",
+        title: "Erro ao processar mensagens",
+        description: "Ocorreu um erro ao tentar processar as mensagens para os grupos",
         variant: "destructive",
       });
     } finally {
@@ -306,6 +384,75 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
                   </FormItem>
                 )}
               />
+              
+              <FormField
+                control={form.control}
+                name="isScheduled"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center gap-2 space-y-0 mt-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked);
+                          setIsScheduled(checked === true);
+                        }}
+                      />
+                    </FormControl>
+                    <FormLabel className="cursor-pointer font-medium">
+                      Agendar envio da mensagem
+                    </FormLabel>
+                  </FormItem>
+                )}
+              />
+              
+              {isScheduled && (
+                <div className="space-y-4 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
+                  <h4 className="font-medium text-blue-800 flex items-center">
+                    <Clock className="h-4 w-4 mr-2 text-blue-600" />
+                    Programação de Envio
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="scheduledDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Data de envio</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="date" 
+                              {...field}
+                              min={new Date().toISOString().split('T')[0]}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="scheduledTime"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Horário</FormLabel>
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className="text-sm text-blue-700">
+                    <Info className="h-4 w-4 inline mr-1" />
+                    As mensagens serão enviadas automaticamente na data e hora programadas
+                  </div>
+                </div>
+              )}
 
               <div className="flex flex-wrap gap-4 mt-6">
                 <Button
