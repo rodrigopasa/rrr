@@ -62,7 +62,7 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
   const [isScheduled, setIsScheduled] = useState(false);
 
   // Buscar grupos do WhatsApp
-  const { data: groups = [], isLoading: isLoadingGroups } = useQuery<WhatsAppGroup[]>({
+  const { data: groups = [], isLoading: isLoadingGroups } = useQuery({
     queryKey: ['/api/whatsapp/groups'],
     queryFn: async () => {
       try {
@@ -345,6 +345,9 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
                                   <Users className="h-3 w-3 mr-1 inline" />
                                   {group.participantsCount || 0} membros
                                 </div>
+                                <div className="text-xs text-gray-500 mt-0.5">
+                                  ID: <span className="font-mono">{group.id}</span>
+                                </div>
                               </div>
                             </CardContent>
                           </Card>
@@ -483,6 +486,11 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span>Enviando...</span>
+                    </>
+                  ) : isScheduled ? (
+                    <>
+                      <Clock className="h-4 w-4" />
+                      <span>Agendar mensagem</span>
                     </>
                   ) : (
                     <>
