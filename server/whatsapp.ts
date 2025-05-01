@@ -249,23 +249,58 @@ class WhatsAppClient extends EventEmitter {
       if (this.isDevelopment || process.env.NODE_ENV !== 'production' || !this.client || process.env.FORCE_DEV_MODE === 'true') {
         log(`[DEV] Getting simulated WhatsApp chats`, "whatsapp");
         
-        // Dados de exemplo para desenvolvimento
+        // Dados de exemplo para desenvolvimento - incluindo mais grupos para representar melhor uma situação real
         return [
           { 
             id: 'sim_chat_1', 
-            name: 'Família', 
+            name: 'Grupo de Lançamento - Produto X', 
             isGroup: true, 
-            participantsCount: 5, 
-            timestamp: Date.now(), 
-            unreadCount: 0 
+            participantsCount: 42, 
+            timestamp: Date.now() - 2400000, 
+            unreadCount: 5,
+            // Metadados extras para o sistema de campanha
+            campaignStatus: 'active'
           },
           { 
             id: 'sim_chat_2', 
-            name: 'Trabalho', 
+            name: 'Afiliados Premium', 
             isGroup: true, 
-            participantsCount: 8, 
+            participantsCount: 18, 
             timestamp: Date.now() - 3600000, 
-            unreadCount: 2 
+            unreadCount: 0,
+            campaignStatus: 'pending'
+          },
+          { 
+            id: 'sim_chat_3', 
+            name: 'Suporte Técnico', 
+            isGroup: true, 
+            participantsCount: 12, 
+            timestamp: Date.now() - 86400000, 
+            unreadCount: 2
+          },
+          {
+            id: 'sim_chat_4',
+            name: 'Clientes VIP',
+            isGroup: true,
+            participantsCount: 28,
+            timestamp: Date.now() - 7200000,
+            unreadCount: 0
+          },
+          {
+            id: 'sim_chat_5',
+            name: 'Beta Testers',
+            isGroup: true,
+            participantsCount: 15,
+            timestamp: Date.now() - 11600000,
+            unreadCount: 3
+          },
+          {
+            id: 'sim_chat_6',
+            name: 'Equipe de Marketing',
+            isGroup: true,
+            participantsCount: 8,
+            timestamp: Date.now() - 172800000,
+            unreadCount: 0
           },
           { 
             id: 'sim_contact_1', 
