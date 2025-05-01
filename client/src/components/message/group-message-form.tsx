@@ -18,9 +18,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Send, Users, Loader2, CheckCircle2, ListChecks, 
-  Clock, Search, X, Info
+  Clock, Search, X, Info, CalendarRange, Repeat, 
+  Calendar, RotateCw
 } from "lucide-react";
 import MessagePreview from "./message-preview";
+import MessageTemplates from "./message-templates";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -46,6 +48,9 @@ const formSchema = z.object({
   isScheduled: z.boolean().default(false),
   scheduledDate: z.string().optional(),
   scheduledTime: z.string().optional(),
+  isRecurring: z.boolean().default(false),
+  frequency: z.enum(["daily", "weekly", "monthly"]).optional(),
+  endDate: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -58,8 +63,9 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [sendingProgress, setSendingProgress] = useState({ total: 0, sent: 0, failed: 0 });
   
-  // Estados para agendamento
+  // Estados para agendamento e recorrência
   const [isScheduled, setIsScheduled] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
 
   // Buscar grupos do WhatsApp
   const { data: groups = [], isLoading: isLoadingGroups } = useQuery({
@@ -345,8 +351,15 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
                                   <Users className="h-3 w-3 mr-1 inline" />
                                   {group.participantsCount || 0} membros
                                 </div>
-                                <div className="text-xs text-gray-500 mt-0.5">
-                                  ID: <span className="font-mono">{group.id}</span>
+                                <div className="text-xs text-gray-500 mt-0.5 flex items-center justify-between">
+                                  <span>
+                                    ID: <span className="font-mono">{group.id.substring(0, 10)}...</span>
+                                  </span>
+                                  {group.lastMessageSent && (
+                                    <span className="text-xs text-blue-600 italic">
+                                      Última: {new Date(group.timestamp).toLocaleDateString()}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </CardContent>
@@ -412,7 +425,7 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
               {isScheduled && (
                 <div className="space-y-4 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
                   <h4 className="font-medium text-blue-800 flex items-center">
-                    <Clock className="h-4 w-4 mr-2 text-blue-600" />
+                    <CalendarRange className="h-4 w-4 mr-2 text-blue-600" />
                     Programação de Envio
                   </h4>
                   
@@ -450,9 +463,100 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
                     />
                   </div>
                   
-                  <div className="text-sm text-blue-700">
-                    <Info className="h-4 w-4 inline mr-1" />
-                    As mensagens serão enviadas automaticamente na data e hora programadas
+                  {/* Opção para mensagens recorrentes */}
+                  <FormField
+                    control={form.control}
+                    name="isRecurring"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center gap-2 space-y-0 mt-2">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              setIsRecurring(checked === true);
+                            }}
+                          />
+                        </FormControl>
+                        <FormLabel className="cursor-pointer font-medium flex items-center">
+                          <Repeat className="h-3.5 w-3.5 mr-1.5 text-blue-600" />
+                          Mensagem recorrente
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {isRecurring && (
+                    <div className="p-3 bg-white rounded-md border border-blue-100 space-y-3">
+                      <h5 className="text-sm font-medium text-blue-800 flex items-center">
+                        <RotateCw className="h-3.5 w-3.5 mr-1.5 text-blue-600" />
+                        Configuração de Recorrência
+                      </h5>
+                      
+                      <FormField
+                        control={form.control}
+                        name="frequency"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Frequência</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione a frequência" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="daily">Diária</SelectItem>
+                                <SelectItem value="weekly">Semanal</SelectItem>
+                                <SelectItem value="monthly">Mensal</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="endDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Data de término</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="date" 
+                                {...field}
+                                min={new Date().toISOString().split('T')[0]}
+                              />
+                            </FormControl>
+                            <FormDescription className="text-xs">
+                              A data final para envio das mensagens recorrentes
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="text-xs text-blue-800 flex items-start bg-blue-50 p-2 rounded-sm">
+                        <Info className="h-3.5 w-3.5 mt-0.5 mr-1 flex-shrink-0" />
+                        <span>
+                          As mensagens serão enviadas automaticamente com a frequência escolhida 
+                          até a data de término. Você pode cancelar a qualquer momento na área
+                          de agendamentos.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="text-sm text-blue-700 flex items-start mt-2">
+                    <Info className="h-4 w-4 mt-0.5 mr-1.5 flex-shrink-0" />
+                    <span>
+                      As mensagens serão enviadas automaticamente na data e hora programadas.
+                      Você pode acompanhar e gerenciar todos os agendamentos na área de programações.
+                    </span>
                   </div>
                 </div>
               )}
@@ -537,14 +641,23 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
               )}
             </div>
 
-            {/* Coluna de pré-visualização */}
-            {showPreview && (
+            {/* Coluna de pré-visualização ou templates */}
+            {showPreview ? (
               <div className="border rounded-lg p-4 bg-white">
                 <h3 className="text-lg font-medium mb-3 flex items-center">
                   <ListChecks className="h-5 w-5 mr-2 text-blue-500" />
                   Pré-visualização da mensagem
                 </h3>
                 <MessagePreview content={previewMessage} />
+              </div>
+            ) : (
+              <div className="border rounded-lg p-4 bg-white">
+                <MessageTemplates 
+                  onSelectTemplate={(template) => {
+                    form.setValue("message", template, { shouldValidate: true });
+                    setShowPreview(true);
+                  }} 
+                />
               </div>
             )}
           </div>
