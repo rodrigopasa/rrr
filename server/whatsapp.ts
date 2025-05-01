@@ -29,20 +29,26 @@ class WhatsAppClient extends EventEmitter {
     try {
       log("Initializing WhatsApp client...", "whatsapp");
       
-      // Always use simulation mode in development/testing environments
-      // This avoids the Puppeteer/Chrome issues in environments like Replit
-      if (this.isDevelopment || process.env.NODE_ENV !== 'production' || !process.env.PUPPETEER_EXECUTABLE_PATH) {
-        log("Starting WhatsApp in development/test mode (simulated)", "whatsapp");
+      // Verificar se devemos usar o modo simulado
+      const forceDevMode = process.env.FORCE_DEV_MODE === 'true';
+      const noChrome = !process.env.PUPPETEER_EXECUTABLE_PATH;
+      
+      // Sempre usar modo de simulação em ambientes de desenvolvimento/testes
+      // ou quando a variável FORCE_DEV_MODE está definida como true
+      // ou quando não temos o caminho para o Chrome
+      // Isso evita problemas com Puppeteer/Chrome em ambientes como Replit ou Railway
+      if (this.isDevelopment || process.env.NODE_ENV !== 'production' || forceDevMode || noChrome) {
+        log(`Starting WhatsApp in development/test mode (simulated). ENV=${process.env.NODE_ENV}, FORCE_DEV=${forceDevMode}, HAS_CHROME=${!noChrome}`, "whatsapp");
         this.isInitialized = true;
         this.isAuthenticated = true;
         
-        // Simulate a QR code for development testing (base64 encoded image)
+        // Simular um QR code para testes de desenvolvimento (imagem codificada em base64)
         this.qrCode = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAMAAABrrFhUAAAAA1BMVEX///+nxBvIAAAASElEQVR4nO3BMQEAAADCIPuntsYOYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOA98PAABpHAX+QAAAABJRU5ErkJggg==";
         
         setTimeout(() => {
-          // After a few seconds, simulate the client being ready
+          // Após alguns segundos, simular que o cliente está pronto
           this.emit("ready");
-          log("WhatsApp client initialized in development mode", "whatsapp");
+          log("WhatsApp client initialized in development/simulation mode", "whatsapp");
         }, 2000);
         
         return;
@@ -50,24 +56,37 @@ class WhatsAppClient extends EventEmitter {
       
       // For production environment, create the actual WhatsApp client
       log("Starting WhatsApp in production mode with Puppeteer", "whatsapp");
+      // Obter argumentos do Puppeteer a partir da variável de ambiente ou usar padrões
+      const puppeteerArgs = process.env.PUPPETEER_ARGS ? 
+        process.env.PUPPETEER_ARGS.split(',') : 
+        [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
+          "--no-first-run",
+          "--no-zygote",
+          "--single-process",
+          "--disable-gpu",
+        ];
+        
+      log(`Initializing WhatsApp with Chrome at: ${process.env.PUPPETEER_EXECUTABLE_PATH || 'default'}`, "whatsapp");
+      log(`Using Puppeteer args: ${puppeteerArgs.join(', ')}`, "whatsapp");
+        
       this.client = new Client({
         puppeteer: {
           headless: true,
-          args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-accelerated-2d-canvas",
-            "--no-first-run",
-            "--no-zygote",
-            "--single-process",
-            "--disable-gpu",
-          ],
-          // These settings help with stability in container environments
+          args: puppeteerArgs,
+          // Usar caminho executável configurado ou deixar o Puppeteer encontrar o Chrome
           executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-          defaultViewport: { width: 1280, height: 800 }
+          defaultViewport: { width: 1280, height: 800 },
+          // Aumentar timeouts para ambientes com recursos limitados
+          timeout: 120000,
         },
-      });
+        // Usando opções específicas para a versão do whatsapp-web.js
+        authTimeoutMs: 120000,
+        qrMaxRetries: 10,
+      } as any);
       
       // Set up event listeners for the production client
       if (this.client) {
@@ -142,8 +161,10 @@ class WhatsAppClient extends EventEmitter {
       // Format the number to international format if needed
       const formattedNumber = this.formatPhoneNumber(to);
       
-      // In development mode or if client is not initialized, simulate sending message
-      if (this.isDevelopment || process.env.NODE_ENV !== 'production' || !this.client) {
+      // Verificar se devemos usar o modo simulado
+      const forceDevMode = process.env.FORCE_DEV_MODE === 'true';
+      // Em modo de desenvolvimento ou se o cliente não está inicializado ou se FORCE_DEV_MODE=true, simular envio de mensagem
+      if (this.isDevelopment || process.env.NODE_ENV !== 'production' || !this.client || forceDevMode) {
         log(`[DEV] Sending message to ${formattedNumber}: ${message}`, "whatsapp");
         return `mock_message_${Date.now()}`;
       }
