@@ -8,7 +8,7 @@ RUN apt-get update \
     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
-        google-chrome-stable \
+        chromium \
         fonts-ipafont-gothic \
         fonts-wqy-zenhei \
         fonts-thai-tlwg \
@@ -60,7 +60,7 @@ RUN apt-get update \
 
 # Configurar variáveis de ambiente para o Puppeteer e sistema
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV NODE_ENV=production
 ENV PUPPETEER_ARGS="--no-sandbox,--disable-setuid-sandbox,--disable-dev-shm-usage,--disable-gpu"
 # Configurar para usar modo de desenvolvimento no Railway (temporário até resolvermos problemas com Puppeteer)
@@ -82,7 +82,7 @@ COPY . .
 RUN npm run build
 
 # Expor a porta que a aplicação usa
-EXPOSE 3000
+EXPOSE 5000
 
 # Iniciar a aplicação
 CMD ["npm", "start"]

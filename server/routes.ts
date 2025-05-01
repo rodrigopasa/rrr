@@ -90,6 +90,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(404).json({ message: "QR code not available" });
     }
   });
+  
+  // Obter chats do WhatsApp (conversas individuais e grupos)
+  app.get("/api/whatsapp/chats", isAuthenticated, async (req, res) => {
+    try {
+      const chats = await whatsappClient.getWhatsAppChats();
+      res.json(chats);
+    } catch (error) {
+      console.error("Error fetching WhatsApp chats:", error);
+      res.status(500).json({ message: "Failed to fetch WhatsApp chats" });
+    }
+  });
+  
+  // Obter apenas grupos do WhatsApp
+  app.get("/api/whatsapp/groups", isAuthenticated, async (req, res) => {
+    try {
+      const groups = await whatsappClient.getWhatsAppGroups();
+      res.json(groups);
+    } catch (error) {
+      console.error("Error fetching WhatsApp groups:", error);
+      res.status(500).json({ message: "Failed to fetch WhatsApp groups" });
+    }
+  });
+  
+  // Obter contatos do WhatsApp
+  app.get("/api/whatsapp/contacts", isAuthenticated, async (req, res) => {
+    try {
+      const contacts = await whatsappClient.getWhatsAppContacts();
+      res.json(contacts);
+    } catch (error) {
+      console.error("Error fetching WhatsApp contacts:", error);
+      res.status(500).json({ message: "Failed to fetch WhatsApp contacts" });
+    }
+  });
+  
+  // Enviar mensagem para grupo
+  app.post("/api/whatsapp/send-to-group", isAuthenticated, async (req, res) => {
+    try {
+      const schema = z.object({
+        groupId: z.string(),
+        message: z.string()
+      });
+      
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid request body" });
+      }
+      
+      const { groupId, message } = parsed.data;
+      
+      const messageId = await whatsappClient.sendMessageToGroup(groupId, message);
+      res.json({ success: true, messageId });
+    } catch (error) {
+      console.error("Error sending message to WhatsApp group:", error);
+      res.status(500).json({ message: "Failed to send message to WhatsApp group" });
+    }
+  });
 
   // Initialize HTTP server
   const httpServer = createServer(app);

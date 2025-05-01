@@ -4,12 +4,31 @@ import qrcode from "qrcode";
 import { EventEmitter } from "events";
 
 // Custom type for message with additional properties
+// Tipos para mensagens e grupos
 type ScheduledMessage = {
   id: string;
   userId: number;
   recipients: string[];
   content: string;
   subject?: string;
+}
+
+type WhatsAppChat = {
+  id: string;
+  name: string;
+  isGroup: boolean;
+  participantsCount?: number;
+  timestamp: number;
+  unreadCount?: number;
+}
+
+type WhatsAppContact = {
+  id: string;
+  name: string;
+  number: string;
+  profilePicUrl?: string;
+  isMyContact: boolean;
+  isGroup: boolean;
 }
 
 class WhatsAppClient extends EventEmitter {
@@ -218,6 +237,147 @@ class WhatsAppClient extends EventEmitter {
 
   addAuthenticatedUser(userId: number): void {
     this.authenticatedUsers.add(userId);
+  }
+
+  async getWhatsAppChats(): Promise<WhatsAppChat[]> {
+    if (!this.isAuthenticated) {
+      throw new Error("WhatsApp client not ready or not authenticated");
+    }
+
+    try {
+      // Em modo simulado, retorna dados de exemplo
+      if (this.isDevelopment || process.env.NODE_ENV !== 'production' || !this.client || process.env.FORCE_DEV_MODE === 'true') {
+        log(`[DEV] Getting simulated WhatsApp chats`, "whatsapp");
+        
+        // Dados de exemplo para desenvolvimento
+        return [
+          { 
+            id: 'sim_chat_1', 
+            name: 'Família', 
+            isGroup: true, 
+            participantsCount: 5, 
+            timestamp: Date.now(), 
+            unreadCount: 0 
+          },
+          { 
+            id: 'sim_chat_2', 
+            name: 'Trabalho', 
+            isGroup: true, 
+            participantsCount: 8, 
+            timestamp: Date.now() - 3600000, 
+            unreadCount: 2 
+          },
+          { 
+            id: 'sim_contact_1', 
+            name: 'João Silva', 
+            isGroup: false, 
+            timestamp: Date.now() - 86400000, 
+            unreadCount: 0 
+          },
+        ];
+      }
+
+      // Em produção, busca os chats reais
+      const chats = await this.client.getChats();
+      
+      return chats.map(chat => {
+        const isGroup = chat.isGroup;
+        return {
+          id: chat.id._serialized,
+          name: chat.name,
+          isGroup,
+          participantsCount: isGroup ? chat.participants?.length : undefined,
+          timestamp: chat.timestamp * 1000, // Converter para milliseconds
+          unreadCount: chat.unreadCount
+        };
+      });
+    } catch (error) {
+      log(`Error getting WhatsApp chats: ${error}`, "whatsapp");
+      throw error;
+    }
+  }
+
+  async getWhatsAppGroups(): Promise<WhatsAppChat[]> {
+    const chats = await this.getWhatsAppChats();
+    return chats.filter(chat => chat.isGroup);
+  }
+
+  async getWhatsAppContacts(): Promise<WhatsAppContact[]> {
+    if (!this.isAuthenticated) {
+      throw new Error("WhatsApp client not ready or not authenticated");
+    }
+
+    try {
+      // Em modo simulado, retorna dados de exemplo
+      if (this.isDevelopment || process.env.NODE_ENV !== 'production' || !this.client || process.env.FORCE_DEV_MODE === 'true') {
+        log(`[DEV] Getting simulated WhatsApp contacts`, "whatsapp");
+        
+        // Dados de exemplo para desenvolvimento
+        return [
+          { 
+            id: 'sim_contact_1', 
+            name: 'João Silva', 
+            number: '5511999991111',
+            isMyContact: true,
+            isGroup: false
+          },
+          { 
+            id: 'sim_contact_2', 
+            name: 'Maria Oliveira', 
+            number: '5511999992222',
+            isMyContact: true,
+            isGroup: false
+          },
+          { 
+            id: 'sim_contact_3', 
+            name: 'Carlos Pereira', 
+            number: '5511999993333',
+            isMyContact: true,
+            isGroup: false
+          },
+        ];
+      }
+
+      // Em produção, busca os contatos reais
+      const contacts = await this.client.getContacts();
+      
+      return contacts
+        .filter(contact => !contact.isMe && !contact.isGroup && contact.name) // Filtra apenas contatos reais
+        .map(contact => {
+          return {
+            id: contact.id._serialized,
+            name: contact.name || contact.pushname || 'Unknown',
+            number: contact.number,
+            profilePicUrl: contact.profilePicUrl,
+            isMyContact: contact.isMyContact,
+            isGroup: contact.isGroup
+          };
+        });
+    } catch (error) {
+      log(`Error getting WhatsApp contacts: ${error}`, "whatsapp");
+      throw error;
+    }
+  }
+
+  async sendMessageToGroup(groupId: string, message: string): Promise<string | null> {
+    if (!this.isAuthenticated) {
+      throw new Error("WhatsApp client not ready or not authenticated");
+    }
+
+    try {
+      // Em modo simulado, apenas logamos a mensagem
+      if (this.isDevelopment || process.env.NODE_ENV !== 'production' || !this.client || process.env.FORCE_DEV_MODE === 'true') {
+        log(`[DEV] Sending message to group ${groupId}: ${message}`, "whatsapp");
+        return `mock_group_message_${Date.now()}`;
+      }
+
+      // Em produção, enviamos para o grupo real
+      const response = await this.client.sendMessage(groupId, message);
+      return response.id._serialized;
+    } catch (error) {
+      log(`Error sending WhatsApp message to group: ${error}`, "whatsapp");
+      throw error;
+    }
   }
 
   private formatPhoneNumber(phoneNumber: string): string {
