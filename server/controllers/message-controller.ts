@@ -47,7 +47,7 @@ export async function handleSendMessage(req: Request, res: Response) {
       scheduledAt: scheduled && scheduledDate && scheduledTime 
         ? new Date(`${scheduledDate}T${scheduledTime}`) 
         : undefined,
-      status: scheduled ? 'scheduled' : 'pending',
+      status: scheduled ? 'scheduled' : 'pending'
     });
 
     // Get contact information for recipients (assuming recipients are contact names)
