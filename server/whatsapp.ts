@@ -282,11 +282,13 @@ class WhatsAppClient extends EventEmitter {
       
       return chats.map(chat => {
         const isGroup = chat.isGroup;
+        // Usar cast para any para acessar propriedades que podem não estar na definição de tipos
+        const chatAny = chat as any;
         return {
           id: chat.id._serialized,
           name: chat.name,
           isGroup,
-          participantsCount: isGroup ? chat.participants?.length : undefined,
+          participantsCount: isGroup && chatAny.participants ? chatAny.participants.length : undefined,
           timestamp: chat.timestamp * 1000, // Converter para milliseconds
           unreadCount: chat.unreadCount
         };
@@ -341,18 +343,24 @@ class WhatsAppClient extends EventEmitter {
       // Em produção, busca os contatos reais
       const contacts = await this.client.getContacts();
       
-      return contacts
-        .filter(contact => !contact.isMe && !contact.isGroup && contact.name) // Filtra apenas contatos reais
-        .map(contact => {
-          return {
-            id: contact.id._serialized,
-            name: contact.name || contact.pushname || 'Unknown',
-            number: contact.number,
-            profilePicUrl: contact.profilePicUrl,
-            isMyContact: contact.isMyContact,
-            isGroup: contact.isGroup
-          };
-        });
+      // Filtra apenas contatos reais
+      const filteredContacts = contacts.filter(contact => !contact.isMe && !contact.isGroup && contact.name);
+      
+      // Mapeia para o formato esperado sem usar async/await dentro do map
+      return filteredContacts.map(contact => {
+        // Cast para any para evitar erros de tipo
+        const contactAny = contact as any;
+        
+        return {
+          id: contact.id._serialized,
+          name: contact.name || contact.pushname || 'Unknown',
+          number: contact.number,
+          // Não busca a imagem do perfil por enquanto para simplificar
+          profilePicUrl: null,
+          isMyContact: contact.isMyContact,
+          isGroup: contact.isGroup
+        };
+      });
     } catch (error) {
       log(`Error getting WhatsApp contacts: ${error}`, "whatsapp");
       throw error;
