@@ -13,7 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Users, RefreshCw, Search, UserPlus, MessageSquare, 
-  Phone, User, UsersRound, ArrowRight, Info
+  Phone, User, UsersRound, ArrowRight, Info, Send,
+  Calendar, Star, Tag, Filter, CheckCircle, Plus, Clock,
+  PlusCircle, ListFilter, MessageCircle, CalendarClock
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -31,6 +33,11 @@ interface WhatsAppGroup {
   participantsCount?: number;
   timestamp: number;
   unreadCount?: number;
+  // Custom properties for campaign management
+  tag?: string;
+  isFavorite?: boolean;
+  lastMessageSent?: string;
+  campaignStatus?: 'active' | 'pending' | 'completed' | 'none';
 }
 
 interface WhatsAppContact {
@@ -48,6 +55,13 @@ export default function WhatsAppGroupsContactsPage() {
   const [location] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("groups");
+  
+  // Novos estados para gerenciamento de campanhas de lançamento
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [activeGroup, setActiveGroup] = useState<WhatsAppGroup | null>(null);
+  const [groupFilter, setGroupFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("name");
+  const [showQuickActions, setShowQuickActions] = useState(false);
   
   // Check for tab parameter in URL
   useEffect(() => {
@@ -128,10 +142,53 @@ export default function WhatsAppGroupsContactsPage() {
     }
   };
 
-  // Filter groups and contacts based on search term
+  // Handlers para gerenciamento de campanhas
+  const handleToggleFavorite = (groupId: string) => {
+    // Em uma implementação real, isso chamaria uma API para atualizar no backend
+    toast({
+      title: "Grupo favoritado",
+      description: "Este grupo foi adicionado aos favoritos",
+    });
+  };
+
+  const handleCreateCampaign = (group: WhatsAppGroup) => {
+    setActiveGroup(group);
+    setShowCampaignModal(true);
+  };
+
+  const handleScheduleMessage = (group: WhatsAppGroup) => {
+    // Aqui redirecionaríamos para a página de agendamento pré-preenchida
+    toast({
+      title: "Agendamento iniciado",
+      description: "Configure sua mensagem programada para o lançamento",
+    });
+  };
+
+  // Advanced filtering 
+  const applyGroupFilters = (group: WhatsAppGroup) => {
+    if (groupFilter === "all") return true;
+    if (groupFilter === "favorites" && group.isFavorite) return true;
+    if (groupFilter === "campaign" && group.campaignStatus) return true;
+    return false;
+  };
+
+  // Filter groups and contacts based on search term and filters
   const filteredGroups = groups?.filter(group => 
-    group.name.toLowerCase().includes(searchTerm.toLowerCase())
+    group.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
+    applyGroupFilters(group)
   );
+  
+  // Sort groups
+  const sortedGroups = filteredGroups?.slice().sort((a, b) => {
+    if (sortBy === "name") {
+      return a.name.localeCompare(b.name);
+    } else if (sortBy === "members") {
+      return (b.participantsCount || 0) - (a.participantsCount || 0);
+    } else if (sortBy === "recent") {
+      return b.timestamp - a.timestamp;
+    }
+    return 0;
+  });
   
   const filteredContacts = contacts?.filter(contact => 
     contact.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -208,7 +265,7 @@ export default function WhatsAppGroupsContactsPage() {
 
             {status?.isAuthenticated && (
               <>
-                <div className="mb-4">
+                <div className="mb-4 space-y-3">
                   <div className="relative">
                     <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                     <Input
@@ -218,6 +275,63 @@ export default function WhatsAppGroupsContactsPage() {
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
+                  
+                  {activeTab === "groups" && (
+                    <div className="flex flex-wrap gap-2 items-center justify-between bg-white p-3 rounded-lg border">
+                      <div className="flex gap-2 items-center">
+                        <ListFilter className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm font-medium">Filtros:</span>
+                        
+                        <div className="flex flex-wrap gap-1.5">
+                          <Badge 
+                            variant={groupFilter === "all" ? "default" : "outline"}
+                            className={`cursor-pointer ${groupFilter === "all" ? "bg-gradient-to-r from-blue-500 to-orange-500" : ""}`}
+                            onClick={() => setGroupFilter("all")}
+                          >
+                            Todos
+                          </Badge>
+                          <Badge 
+                            variant={groupFilter === "favorites" ? "default" : "outline"}
+                            className={`cursor-pointer ${groupFilter === "favorites" ? "bg-gradient-to-r from-blue-500 to-orange-500" : ""}`}
+                            onClick={() => setGroupFilter("favorites")}
+                          >
+                            <Star className="h-3 w-3 mr-1" />
+                            Favoritos
+                          </Badge>
+                          <Badge 
+                            variant={groupFilter === "campaign" ? "default" : "outline"}
+                            className={`cursor-pointer ${groupFilter === "campaign" ? "bg-gradient-to-r from-blue-500 to-orange-500" : ""}`}
+                            onClick={() => setGroupFilter("campaign")}
+                          >
+                            <Tag className="h-3 w-3 mr-1" />
+                            Campanhas
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2 items-center">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-sm h-7 px-2 text-gray-600"
+                          onClick={() => setShowQuickActions(!showQuickActions)}
+                        >
+                          <PlusCircle className="h-3.5 w-3.5 mr-1.5" />
+                          Ações de Lançamento
+                        </Button>
+                        
+                        <select 
+                          className="text-sm border rounded px-2 py-1 bg-transparent text-gray-600"
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value)}
+                        >
+                          <option value="name">Nome</option>
+                          <option value="members">Mais membros</option>
+                          <option value="recent">Mais recentes</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <Tabs value={activeTab} defaultValue="groups" className="w-full" onValueChange={setActiveTab}>
@@ -242,6 +356,62 @@ export default function WhatsAppGroupsContactsPage() {
                     </TabsTrigger>
                   </TabsList>
 
+                  {/* Quick Action Panel - Aparece quando o botão "Ações de Lançamento" é clicado */}
+                  {showQuickActions && (
+                    <div className="bg-gradient-to-r from-blue-500/10 to-orange-500/10 border border-blue-200 rounded-lg p-4 mb-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="font-semibold text-lg flex items-center">
+                            <PlusCircle className="h-5 w-5 mr-2 text-orange-500" />
+                            Ações Rápidas para Lançamento
+                          </h3>
+                          <p className="text-sm text-gray-600">Ferramentas para ajudar no seu lançamento de produto</p>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => setShowQuickActions(false)}>
+                          <i className="ri-close-line"></i>
+                        </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="bg-white rounded-lg border p-3 hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer">
+                          <div className="flex items-start">
+                            <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center mr-3">
+                              <Send className="h-4 w-4 text-white" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium">Mensagem em Massa</h4>
+                              <p className="text-xs text-gray-500 mt-0.5">Envie mensagens para múltiplos grupos de uma só vez</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-white rounded-lg border p-3 hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer">
+                          <div className="flex items-start">
+                            <div className="h-9 w-9 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center mr-3">
+                              <CalendarClock className="h-4 w-4 text-white" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium">Agendar Campanha</h4>
+                              <p className="text-xs text-gray-500 mt-0.5">Crie mensagens programadas para seu lançamento</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-white rounded-lg border p-3 hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer">
+                          <div className="flex items-start">
+                            <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-500 to-orange-500 flex items-center justify-center mr-3">
+                              <Tag className="h-4 w-4 text-white" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium">Organizar Grupos</h4>
+                              <p className="text-xs text-gray-500 mt-0.5">Categorize seus grupos para melhor gestão</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                
                   <TabsContent value="groups" className="space-y-4">
                     <Card>
                       <CardHeader>
@@ -269,33 +439,115 @@ export default function WhatsAppGroupsContactsPage() {
                           </div>
                         ) : filteredGroups && filteredGroups.length > 0 ? (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {filteredGroups.map((group) => (
+                            {sortedGroups?.map((group) => (
                               <div 
                                 key={group.id} 
-                                className="flex items-start p-3 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer gap-3"
+                                className="flex items-start p-3 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer gap-3 relative overflow-hidden"
                               >
-                                <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                                  <Users className="h-5 w-5 text-orange-600" />
+                                {/* Indicador de campanha ativa */}
+                                {group.campaignStatus === 'active' && (
+                                  <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-2 py-0.5 rounded-bl-md">
+                                    <CheckCircle className="h-3 w-3 inline-block mr-1" />
+                                    Campanha Ativa
+                                  </div>
+                                )}
+                                
+                                {/* Indicador de programação */}
+                                {group.campaignStatus === 'pending' && (
+                                  <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-2 py-0.5 rounded-bl-md">
+                                    <Clock className="h-3 w-3 inline-block mr-1" />
+                                    Programado
+                                  </div>
+                                )}
+                                
+                                {/* Ícone do grupo */}
+                                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-500/80 to-orange-600 flex items-center justify-center flex-shrink-0">
+                                  <Users className="h-5 w-5 text-white" />
                                 </div>
-                                <div className="overflow-hidden">
-                                  <div className="font-medium text-gray-900 truncate">{group.name}</div>
-                                  <div className="text-sm text-gray-500 flex items-center gap-2 mt-1">
+                                
+                                <div className="flex-1 overflow-hidden">
+                                  <div className="flex items-center">
+                                    <div className="font-medium text-gray-900 truncate flex items-center">
+                                      {group.name}
+                                      {group.isFavorite && (
+                                        <Star className="h-3.5 w-3.5 text-amber-400 ml-1.5 fill-amber-400" />
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Tags de categorização */}
+                                  {group.tag && (
+                                    <div className="mt-1">
+                                      <Badge variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700">
+                                        {group.tag}
+                                      </Badge>
+                                    </div>
+                                  )}
+                                  
+                                  <div className="text-sm text-gray-500 flex items-center gap-2 mt-1.5">
                                     <div className="flex items-center">
                                       <UsersRound className="h-3.5 w-3.5 mr-1" />
                                       <span>{group.participantsCount || 0} membros</span>
                                     </div>
-                                    <TooltipProvider>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button variant="ghost" size="icon" className="h-7 w-7">
-                                            <MessageSquare className="h-3.5 w-3.5 text-blue-600" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p>Enviar mensagem para este grupo</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
+                                    
+                                    <div className="flex ml-auto">
+                                      {/* Botão para agendar mensagem para lançamento */}
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button 
+                                              variant="ghost" 
+                                              size="icon" 
+                                              className="h-7 w-7"
+                                              onClick={() => handleScheduleMessage(group)}
+                                            >
+                                              <CalendarClock className="h-3.5 w-3.5 text-blue-600" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p>Agendar mensagem para lançamento</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                      
+                                      {/* Botão para enviar mensagem */}
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button 
+                                              variant="ghost" 
+                                              size="icon" 
+                                              className="h-7 w-7"
+                                              onClick={() => window.location.href = `/messages?group=${group.id}`}
+                                            >
+                                              <MessageCircle className="h-3.5 w-3.5 text-blue-600" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p>Enviar mensagem para este grupo</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                      
+                                      {/* Botão para favoritar */}
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button 
+                                              variant="ghost" 
+                                              size="icon" 
+                                              className="h-7 w-7"
+                                              onClick={() => handleToggleFavorite(group.id)}
+                                            >
+                                              <Star className={`h-3.5 w-3.5 ${group.isFavorite ? "text-amber-400 fill-amber-400" : "text-gray-400"}`} />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p>{group.isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
