@@ -90,6 +90,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(404).json({ message: "QR code not available" });
     }
   });
+  
+  // Página HTML para visualização direta do QR code (sem autenticação para facilitar)
+  app.get('/api/whatsapp/qr-code', (req, res) => {
+    const status = whatsappClient.getStatus();
+    if (status.qrCode) {
+      res.send(`<html>
+        <head>
+          <title>WhatsApp QR Code</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              text-align: center; 
+              margin: 20px;
+              background-color: #f5f5f5;
+            }
+            .container {
+              max-width: 500px;
+              margin: 0 auto;
+              background: white;
+              padding: 20px;
+              border-radius: 10px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            h1 { color: #FF6B00; }
+            img { 
+              max-width: 100%; 
+              border: 1px solid #ddd;
+              margin: 20px 0;
+            }
+            .instructions {
+              text-align: left;
+              background: #f9f9f9;
+              padding: 15px;
+              border-radius: 5px;
+              margin-top: 20px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>WhatsApp QR Code</h1>
+            <p>Escaneie este código QR com seu aplicativo WhatsApp para conectar</p>
+            <img src="${status.qrCode}" alt="WhatsApp QR Code" />
+            <div class="instructions">
+              <h3>Instruções:</h3>
+              <ol>
+                <li>Abra o WhatsApp no seu celular</li>
+                <li>Toque em Menu (três pontos) ou Configurações</li>
+                <li>Selecione WhatsApp Web/Dispositivos Conectados</li>
+                <li>Aponte a câmera para este QR code</li>
+                <li>Mantenha a conexão do seu celular com a internet</li>
+              </ol>
+            </div>
+          </div>
+        </body>
+      </html>`);
+    } else {
+      res.send(`<html>
+        <head>
+          <title>WhatsApp QR Code</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              text-align: center; 
+              margin: 20px;
+              background-color: #f5f5f5;
+            }
+            .container {
+              max-width: 500px;
+              margin: 0 auto;
+              background: white;
+              padding: 20px;
+              border-radius: 10px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            h1 { color: #FF6B00; }
+            .message {
+              padding: 15px;
+              background: #fff3cd;
+              border-radius: 5px;
+              margin: 20px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>WhatsApp QR Code</h1>
+            <div class="message">
+              <p>QR Code não disponível ou WhatsApp já autenticado</p>
+              <p>Tente reiniciar o serviço ou verificar os logs se precisar reconectar.</p>
+            </div>
+          </div>
+        </body>
+      </html>`);
+    }
+  });
 
   // Initialize HTTP server
   const httpServer = createServer(app);
