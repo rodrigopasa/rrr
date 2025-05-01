@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import Sidebar from "@/components/layout/sidebar";
 import TopNav from "@/components/layout/top-nav";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,8 +45,21 @@ interface WhatsAppContact {
 export default function WhatsAppGroupsContactsPage() {
   const { user, isLoading: isLoadingAuth } = useAuth();
   const { toast } = useToast();
+  const [location] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("groups");
+  
+  // Check for tab parameter in URL
+  useEffect(() => {
+    // Parse the query string
+    const searchParams = new URLSearchParams(window.location.search);
+    const tabParam = searchParams.get('tab');
+    
+    // Set active tab if parameter exists and is valid
+    if (tabParam === 'contacts') {
+      setActiveTab('contacts');
+    }
+  }, [location]);
 
   // Query for WhatsApp status
   const { data: status } = useQuery({
@@ -207,7 +220,7 @@ export default function WhatsAppGroupsContactsPage() {
                   </div>
                 </div>
 
-                <Tabs defaultValue="groups" className="w-full" onValueChange={setActiveTab}>
+                <Tabs value={activeTab} defaultValue="groups" className="w-full" onValueChange={setActiveTab}>
                   <TabsList className="grid w-full grid-cols-2 mb-6">
                     <TabsTrigger value="groups" className="flex items-center gap-2">
                       <UsersRound className="h-4 w-4" />
