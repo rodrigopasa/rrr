@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Link, useLocation } from "wouter";
+import { Logo } from "@/components/ui/logo";
 
 export default function Sidebar() {
   const [location] = useLocation();
@@ -26,9 +27,8 @@ export default function Sidebar() {
 
   return (
     <div className="w-64 bg-gray-900 text-white hidden md:flex flex-col flex-shrink-0 h-screen">
-      <div className="p-4 flex items-center border-b border-gray-800">
-        <i className="ri-whatsapp-line text-[#25D366] text-2xl mr-2"></i>
-        <h1 className="text-xl font-semibold bg-gradient-to-r from-blue-500 to-orange-500 bg-clip-text text-transparent">Automizap</h1>
+      <div className="p-4 flex items-center justify-center border-b border-gray-800">
+        <Logo size="medium" />
       </div>
       <nav className="p-4 flex-grow">
         <ul>

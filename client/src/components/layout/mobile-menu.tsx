@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
+import { Logo } from "@/components/ui/logo";
 
 export default function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -49,10 +50,7 @@ export default function MobileMenu() {
         >
           <div className="bg-gray-900 text-white h-full w-64 absolute left-0 top-0" onClick={e => e.stopPropagation()}>
             <div className="p-4 flex items-center justify-between border-b border-gray-800">
-              <div className="flex items-center">
-                <i className="ri-whatsapp-line text-[#25D366] text-2xl mr-2"></i>
-                <h1 className="text-xl font-semibold bg-gradient-to-r from-blue-500 to-orange-500 bg-clip-text text-transparent">Automizap</h1>
-              </div>
+              <Logo size="small" />
               <button className="text-white" onClick={handleClose}>
                 <i className="ri-close-line text-xl"></i>
               </button>
