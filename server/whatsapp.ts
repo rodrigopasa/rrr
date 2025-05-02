@@ -135,7 +135,16 @@ class WhatsAppClient extends EventEmitter {
 
   async sendMessage(to: string, message: string): Promise<string | null> {
     if (!this.isAuthenticated || !this.client) {
-      log("WhatsApp client not ready or authenticated for sending messages", "whatsapp");
+      log("WhatsApp client not ready or authenticated for sending messages - using compatibility mode", "whatsapp");
+      
+      // Em ambiente de desenvolvimento sem o cliente WhatsApp, retornamos um ID falso
+      // para permitir que o fluxo continue sendo testado
+      if (process.env.NODE_ENV === 'development') {
+        const mockMessageId = `mock_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+        log(`DEV MODE: Simulating message sent to ${to} with ID: ${mockMessageId}`, "whatsapp");
+        return mockMessageId;
+      }
+      
       throw new Error("WhatsApp client not ready or not authenticated");
     }
 
@@ -192,7 +201,19 @@ class WhatsAppClient extends EventEmitter {
     message: ScheduledMessage
   ): Promise<{ successful: string[]; failed: string[] }> {
     if (!this.isAuthenticated || !this.client) {
-      log("WhatsApp client not ready for bulk messages", "whatsapp");
+      log("WhatsApp client not ready for bulk messages - using compatibility mode", "whatsapp");
+      
+      // Em ambiente de desenvolvimento, simulamos o envio para permitir testes
+      if (process.env.NODE_ENV === 'development') {
+        log(`DEV MODE: Simulating bulk message send to ${message.recipients.length} recipients`, "whatsapp");
+        
+        // Simulando alguns sucessos e falhas para testar cenários reais
+        const successful = message.recipients.slice(0, Math.ceil(message.recipients.length * 0.8));
+        const failed = message.recipients.slice(Math.ceil(message.recipients.length * 0.8));
+        
+        return { successful, failed };
+      }
+      
       throw new Error("WhatsApp client not ready or not authenticated");
     }
 
