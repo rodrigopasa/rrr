@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -106,3 +106,163 @@ export type Message = typeof messages.$inferSelect;
 
 export type InsertMessageRecipient = z.infer<typeof insertMessageRecipientSchema>;
 export type MessageRecipient = typeof messageRecipients.$inferSelect;
+
+// WhatsApp Groups schema
+export const whatsappGroups = pgTable("whatsapp_groups", {
+  id: text("id").primaryKey(), // ID do grupo do WhatsApp
+  userId: integer("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  isGroup: boolean("is_group").default(true),
+  participantsCount: integer("participants_count"),
+  timestamp: timestamp("timestamp").defaultNow(),
+  unreadCount: integer("unread_count").default(0),
+  isFavorite: boolean("is_favorite").default(false),
+  lastMessageSent: text("last_message_sent"),
+  metadata: json("metadata"), // Dados adicionais do grupo
+  campaignStatus: text("campaign_status").default("none"), // none, active, pending, completed
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertWhatsappGroupSchema = createInsertSchema(whatsappGroups).pick({
+  id: true,
+  userId: true,
+  name: true,
+  isGroup: true,
+  participantsCount: true,
+  timestamp: true,
+  unreadCount: true,
+  isFavorite: true,
+  lastMessageSent: true,
+  metadata: true,
+  campaignStatus: true,
+});
+
+// WhatsApp Contacts schema
+export const whatsappContacts = pgTable("whatsapp_contacts", {
+  id: text("id").primaryKey(), // ID do contato do WhatsApp
+  userId: integer("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  number: text("number").notNull(),
+  profilePicUrl: text("profile_pic_url"),
+  isMyContact: boolean("is_my_contact").default(false),
+  isGroup: boolean("is_group").default(false),
+  isFavorite: boolean("is_favorite").default(false),
+  metadata: json("metadata"), // Dados adicionais do contato
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertWhatsappContactSchema = createInsertSchema(whatsappContacts).pick({
+  id: true,
+  userId: true,
+  name: true,
+  number: true,
+  profilePicUrl: true,
+  isMyContact: true,
+  isGroup: true,
+  isFavorite: true,
+  metadata: true,
+});
+
+// WhatsApp Status schema (para armazenar estado da conexão)
+export const whatsappStatus = pgTable("whatsapp_status", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id).unique(),
+  isAuthenticated: boolean("is_authenticated").default(false),
+  lastQrCode: text("last_qr_code"),
+  lastAuthenticated: timestamp("last_authenticated"),
+  deviceInfo: json("device_info"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertWhatsappStatusSchema = createInsertSchema(whatsappStatus).pick({
+  userId: true,
+  isAuthenticated: true,
+  lastQrCode: true,
+  lastAuthenticated: true,
+  deviceInfo: true,
+});
+
+// Types para WhatsApp
+export type InsertWhatsappGroup = z.infer<typeof insertWhatsappGroupSchema>;
+export type WhatsappGroup = typeof whatsappGroups.$inferSelect;
+
+export type InsertWhatsappContact = z.infer<typeof insertWhatsappContactSchema>;
+export type WhatsappContact = typeof whatsappContacts.$inferSelect;
+
+export type InsertWhatsappStatus = z.infer<typeof insertWhatsappStatusSchema>;
+export type WhatsappStatus = typeof whatsappStatus.$inferSelect;
+
+// Campaigns schema
+export const campaigns = pgTable("campaigns", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("draft"), // draft, scheduled, active, paused, completed
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  messageTemplate: text("message_template").notNull(),
+  tags: json("tags").$type<string[]>().default([]),
+  metadata: json("metadata"), // Dados adicionais da campanha
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCampaignSchema = createInsertSchema(campaigns).pick({
+  userId: true,
+  name: true,
+  description: true,
+  status: true,
+  startDate: true,
+  endDate: true,
+  messageTemplate: true,
+  tags: true,
+  metadata: true,
+});
+
+// Campaign Groups (relação entre campanhas e grupos)
+export const campaignGroups = pgTable("campaign_groups", {
+  id: serial("id").primaryKey(),
+  campaignId: integer("campaign_id").notNull().references(() => campaigns.id),
+  groupId: text("group_id").notNull().references(() => whatsappGroups.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCampaignGroupSchema = createInsertSchema(campaignGroups).pick({
+  campaignId: true,
+  groupId: true,
+});
+
+// Campaign stats
+export const campaignStats = pgTable("campaign_stats", {
+  id: serial("id").primaryKey(),
+  campaignId: integer("campaign_id").notNull().references(() => campaigns.id),
+  messagesSent: integer("messages_sent").default(0),
+  messagesDelivered: integer("messages_delivered").default(0),
+  messagesRead: integer("messages_read").default(0),
+  totalMessages: integer("total_messages").default(0),
+  progress: integer("progress").default(0),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCampaignStatsSchema = createInsertSchema(campaignStats).pick({
+  campaignId: true,
+  messagesSent: true,
+  messagesDelivered: true,
+  messagesRead: true,
+  totalMessages: true,
+  progress: true,
+});
+
+// Types para Campaigns
+export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
+export type Campaign = typeof campaigns.$inferSelect;
+
+export type InsertCampaignGroup = z.infer<typeof insertCampaignGroupSchema>;
+export type CampaignGroup = typeof campaignGroups.$inferSelect;
+
+export type InsertCampaignStats = z.infer<typeof insertCampaignStatsSchema>;
+export type CampaignStats = typeof campaignStats.$inferSelect;

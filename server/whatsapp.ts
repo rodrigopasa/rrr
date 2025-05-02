@@ -1,7 +1,8 @@
-import { Client } from "whatsapp-web.js";
+import { Client, LocalAuth } from "whatsapp-web.js";
 import { log } from "./vite";
 import qrcode from "qrcode";
 import { EventEmitter } from "events";
+import { storage } from './storage';
 
 // Custom type for message with additional properties
 // Tipos para mensagens e grupos
