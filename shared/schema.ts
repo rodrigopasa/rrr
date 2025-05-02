@@ -53,7 +53,6 @@ export const messages = pgTable("messages", {
   userId: integer("user_id").notNull().references(() => users.id),
   subject: text("subject"),
   content: text("content").notNull(),
-  type: text("type").default("standard"), // standard, direct, campaign
   isScheduled: boolean("is_scheduled").default(false),
   scheduledAt: timestamp("scheduled_at"),
   sentAt: timestamp("sent_at"),
@@ -65,7 +64,6 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   userId: true,
   subject: true,
   content: true,
-  type: true,
   isScheduled: true,
   scheduledAt: true,
   status: true,

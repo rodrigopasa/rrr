@@ -369,7 +369,6 @@ export class DatabaseStorage implements IStorage {
       userId,
       content: messageContent,
       subject: subject || "Mensagem direta",
-      type: "direct", // Especificar que é uma mensagem direta
       status: "pending", // Inicialmente pendente até confirmação de envio
       sentAt: new Date()
     };
