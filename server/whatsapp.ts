@@ -38,7 +38,7 @@ class WhatsAppClient extends EventEmitter {
   private isAuthenticated = false;
   private authenticatedUsers = new Set<number>();
   private qrCode: string | null = null;
-  private isDevelopment = false; // Forçado para produção
+  private isDevelopment = process.env.NODE_ENV === 'development';
 
   constructor() {
     super();
@@ -300,6 +300,21 @@ class WhatsAppClient extends EventEmitter {
 
   async getWhatsAppChats(): Promise<WhatsAppChat[]> {
     if (!this.isAuthenticated || !this.client) {
+      log("WhatsApp client not ready for getting chats - using compatibility mode", "whatsapp");
+      
+      // Em ambiente de desenvolvimento, retornamos dados simulados
+      if (process.env.NODE_ENV === 'development') {
+        log(`DEV MODE: Returning mock chats`, "whatsapp");
+        return Array(5).fill(0).map((_, i) => ({
+          id: `mock_chat_${i}_${Date.now()}`,
+          name: `Chat de Teste ${i+1}`,
+          isGroup: i % 2 === 0,
+          participantsCount: i % 2 === 0 ? Math.floor(Math.random() * 20) + 5 : undefined,
+          timestamp: Date.now() - (i * 3600000),
+          unreadCount: Math.floor(Math.random() * 10)
+        }));
+      }
+      
       throw new Error("WhatsApp client not ready or not authenticated");
     }
 
@@ -335,6 +350,21 @@ class WhatsAppClient extends EventEmitter {
       log(`Getting WhatsApp groups...`, "whatsapp");
       
       if (!this.isAuthenticated || !this.client) {
+        log("WhatsApp client not ready for getting groups - using compatibility mode", "whatsapp");
+        
+        // Em ambiente de desenvolvimento, retornamos dados simulados
+        if (process.env.NODE_ENV === 'development') {
+          log(`DEV MODE: Returning mock groups`, "whatsapp");
+          return Array(3).fill(0).map((_, i) => ({
+            id: `mock_group_${i}_${Date.now()}`,
+            name: `Grupo de Teste ${i+1}`,
+            isGroup: true,
+            participantsCount: Math.floor(Math.random() * 30) + 10,
+            timestamp: Date.now() - (i * 7200000),
+            unreadCount: Math.floor(Math.random() * 5)
+          }));
+        }
+        
         throw new Error("WhatsApp client not ready or not authenticated");
       }
       
@@ -433,6 +463,21 @@ class WhatsAppClient extends EventEmitter {
 
   async getWhatsAppContacts(): Promise<WhatsAppContact[]> {
     if (!this.isAuthenticated || !this.client) {
+      log("WhatsApp client not ready for getting contacts - using compatibility mode", "whatsapp");
+      
+      // Em ambiente de desenvolvimento, retornamos dados simulados
+      if (process.env.NODE_ENV === 'development') {
+        log(`DEV MODE: Returning mock contacts`, "whatsapp");
+        return Array(8).fill(0).map((_, i) => ({
+          id: `mock_contact_${i}_${Date.now()}@c.us`,
+          name: `Contato Teste ${i+1}`,
+          number: `55119${Math.floor(10000000 + Math.random() * 90000000)}`,
+          profilePicUrl: undefined,
+          isMyContact: true,
+          isGroup: false
+        }));
+      }
+      
       throw new Error("WhatsApp client not ready or not authenticated");
     }
 
@@ -506,6 +551,15 @@ class WhatsAppClient extends EventEmitter {
 
   async sendMessageToGroup(groupId: string, message: string): Promise<string | null> {
     if (!this.isAuthenticated || !this.client) {
+      log("WhatsApp client not ready for sending group messages - using compatibility mode", "whatsapp");
+      
+      // Em ambiente de desenvolvimento, retornamos um ID falso
+      if (process.env.NODE_ENV === 'development') {
+        const mockMessageId = `mock_group_msg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+        log(`DEV MODE: Simulating message sent to group ${groupId} with ID: ${mockMessageId}`, "whatsapp");
+        return mockMessageId;
+      }
+      
       throw new Error("WhatsApp client not ready or not authenticated");
     }
 
