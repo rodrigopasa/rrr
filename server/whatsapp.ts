@@ -106,6 +106,12 @@ class WhatsAppClient extends EventEmitter {
       // Format the number to international format if needed
       const formattedNumber = this.formatPhoneNumber(to);
       
+      // Verificar se o número é válido antes de tentar enviar
+      if (!formattedNumber || formattedNumber.length < 12) {
+        log(`Invalid phone number format: ${to} -> ${formattedNumber}`, "whatsapp");
+        throw new Error(`Número inválido: ${to}. O formato correto deve ter código do país + DDD + número.`);
+      }
+      
       // Simular envio de mensagem em ambiente de produção
       log(`[PROD] Sending message to ${formattedNumber}: ${message}`, "whatsapp");
       

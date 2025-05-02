@@ -57,7 +57,7 @@ export default function DirectMessageForm() {
       .filter(n => n.length > 0);
     
     // Formatar números (remover não-dígitos, exceto o sinal de +)
-    return numbersRaw.map(num => {
+    const formattedNumbers = numbersRaw.map(num => {
       // Se já tiver +, manter; caso contrário, considerar BR e adicionar +55
       if (num.startsWith("+")) {
         return num.replace(/[^\d+]/g, "");
@@ -73,6 +73,17 @@ export default function DirectMessageForm() {
       
       return cleaned;
     });
+    
+    // Filtrar para garantir que só números com pelo menos 12 dígitos sejam incluídos
+    // (Código de país + DDD + número)
+    return formattedNumbers.filter(num => {
+      // Se começar com +, o número precisa ter pelo menos 13 caracteres (+55 + DDD + número)
+      if (num.startsWith("+")) {
+        return num.length >= 13;
+      }
+      // Se não começar com +, precisa ter pelo menos 12 dígitos (55 + DDD + número)
+      return num.length >= 12;
+    });
   };
 
   // Enviar mensagens
@@ -85,7 +96,7 @@ export default function DirectMessageForm() {
       if (phoneNumbers.length === 0) {
         toast({
           title: "Erro ao enviar mensagens",
-          description: "Não foi possível identificar números de telefone válidos",
+          description: "Não foi possível identificar números de telefone válidos. Os números precisam incluir código do país (ex: +55) + DDD + número.",
           variant: "destructive",
         });
         setIsSending(false);
@@ -154,7 +165,9 @@ export default function DirectMessageForm() {
       console.error("Erro ao enviar mensagens:", error);
       toast({
         title: "Erro ao enviar mensagens",
-        description: "Ocorreu um erro ao tentar enviar as mensagens",
+        description: error instanceof Error 
+          ? `Ocorreu um erro: ${error.message}`
+          : "Ocorreu um erro ao tentar enviar as mensagens. Verifique o formato dos números.",
         variant: "destructive",
       });
     } finally {
