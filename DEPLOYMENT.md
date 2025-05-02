@@ -7,7 +7,7 @@ Para executar o AutomizAP em um ambiente de produção, você precisa ter instal
 1. Node.js 18+ (recomendado: 20.x)
 2. PostgreSQL 14+ para armazenamento de dados
 3. Chromium/Chrome para o suporte ao WhatsApp Web.js
-4. Dependências do sistema para o Puppeteer
+4. Dependências do sistema para o Puppeteer (libgobject-2.0.so.0 e outras bibliotecas - veja abaixo)
 
 ## Instalação de Dependências do Sistema
 
@@ -114,9 +114,75 @@ npm run start
 
 ## Considerações para Produção
 
+### Deploy no Railway
+
+Para fazer deploy no Railway:
+
+1. Conecte seu repositório GitHub ao Railway
+2. Adicione as variáveis de ambiente necessárias
+3. Adicione um **service** para instalar as dependências do Puppeteer no arquivo `railway.json`:
+
+```json
+{
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "npm install"
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "startCommand": "npm run start",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  },
+  "nixpacks": {
+    "aptPkgs": [
+      "gconf-service",
+      "libasound2",
+      "libatk1.0-0",
+      "libcairo2",
+      "libcups2",
+      "libdbus-1-3",
+      "libexpat1",
+      "libfontconfig1",
+      "libgbm1",
+      "libgcc1",
+      "libgconf-2-4",
+      "libgdk-pixbuf2.0-0",
+      "libglib2.0-0",
+      "libgtk-3-0",
+      "libnspr4",
+      "libpango-1.0-0",
+      "libpangocairo-1.0-0",
+      "libstdc++6",
+      "libx11-6",
+      "libx11-xcb1",
+      "libxcb1",
+      "libxcomposite1",
+      "libxcursor1",
+      "libxdamage1",
+      "libxext6",
+      "libxfixes3",
+      "libxi6",
+      "libxrandr2",
+      "libxrender1",
+      "libxss1",
+      "libxtst6",
+      "ca-certificates",
+      "fonts-liberation",
+      "libappindicator1",
+      "libnss3",
+      "lsb-release",
+      "xdg-utils",
+      "wget",
+      "xvfb"
+    ]
+  }
+}
+```
+
 ### Persistência da Sessão do WhatsApp
 
-O WhatsApp Web.js armazena sessões usando a opção `LocalAuth`. Para garantir que estas sessões persistam após reinicialização do servidor, certifique-se de que o diretório `.wwebjs_auth` no raiz da aplicação seja preservado.
+O WhatsApp Web.js armazena sessões usando autenticação local. Para garantir que estas sessões persistam após reinicialização do servidor, certifique-se de que o diretório `.wwebjs_auth` no raiz da aplicação seja preservado.
 
 ### Configuração de Proxy
 
@@ -149,6 +215,15 @@ Se o QR code não aparecer ou houver problemas de conexão com o WhatsApp:
 1. Verifique se todas as dependências do Puppeteer estão instaladas
 2. Certifique-se de que o Chrome/Chromium pode ser executado
 3. Verifique os logs do sistema para mensagens de erro específicas
+4. Se você receber o erro `libgobject-2.0.so.0: cannot open shared object file: No such file or directory`, instale as dependências faltantes:
+
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get install -y libglib2.0-0 libgobject-2.0-0
+   
+   # CentOS/RHEL
+   sudo yum install -y glib2 gobject-introspection
+   ```
 
 ### Problemas de Autenticação
 

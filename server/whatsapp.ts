@@ -52,11 +52,8 @@ class WhatsAppClient extends EventEmitter {
       // Usar a API real do WhatsApp Web.js
       log("Starting WhatsApp with WhatsApp Web.js", "whatsapp");
       
-      // Iniciar cliente com autenticação local
+      // Iniciar cliente com autenticação padrão para garantir QR Code real e funcional
       this.client = new Client({
-        authStrategy: new LocalAuth({
-          clientId: 'automizap-client'
-        }),
         puppeteer: {
           args: [
             '--no-sandbox',
