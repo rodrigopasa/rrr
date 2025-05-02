@@ -135,6 +135,7 @@ class WhatsAppClient extends EventEmitter {
 
   async sendMessage(to: string, message: string): Promise<string | null> {
     if (!this.isAuthenticated || !this.client) {
+      log("WhatsApp client not ready or authenticated for sending messages", "whatsapp");
       throw new Error("WhatsApp client not ready or not authenticated");
     }
 
@@ -151,12 +152,36 @@ class WhatsAppClient extends EventEmitter {
       // Preparar o número para o formato esperado pela API
       const chatId = `${formattedNumber}@c.us`;
       
-      // Enviar a mensagem usando o cliente real
-      log(`Sending message to ${formattedNumber}: ${message}`, "whatsapp");
-      const result = await this.client.sendMessage(chatId, message);
+      // Log detalhe para debug
+      log(`Sending message to ${formattedNumber} (${chatId}): ${message.substring(0, 30)}...`, "whatsapp");
       
-      // Retornar o ID da mensagem
-      return result.id._serialized;
+      // Tenta executar o envio várias vezes se necessário
+      let attempts = 0;
+      const maxAttempts = 3;
+      let lastError = null;
+      
+      while (attempts < maxAttempts) {
+        try {
+          // Enviar a mensagem usando o cliente real
+          const result = await this.client.sendMessage(chatId, message);
+          
+          // Retornar o ID da mensagem
+          log(`Message sent successfully to ${formattedNumber}`, "whatsapp");
+          return result.id._serialized;
+        } catch (sendError) {
+          lastError = sendError;
+          log(`Attempt ${attempts + 1}/${maxAttempts} failed: ${sendError}`, "whatsapp");
+          attempts++;
+          
+          // Esperar um pouco antes de tentar novamente
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+      }
+      
+      log(`All ${maxAttempts} attempts to send message failed: ${lastError}`, "whatsapp");
+      throw lastError;
     } catch (error) {
       log(`Error sending WhatsApp message: ${error}`, "whatsapp");
       throw error;
@@ -167,25 +192,46 @@ class WhatsAppClient extends EventEmitter {
     message: ScheduledMessage
   ): Promise<{ successful: string[]; failed: string[] }> {
     if (!this.isAuthenticated || !this.client) {
+      log("WhatsApp client not ready for bulk messages", "whatsapp");
       throw new Error("WhatsApp client not ready or not authenticated");
     }
 
     const successful: string[] = [];
     const failed: string[] = [];
+    
+    log(`Sending bulk messages to ${message.recipients.length} recipients`, "whatsapp");
 
-    for (const recipient of message.recipients) {
+    // Shuffle recipients para evitar padrões de envio detectáveis
+    const shuffledRecipients = [...message.recipients].sort(() => Math.random() - 0.5);
+    
+    for (const recipient of shuffledRecipients) {
       try {
-        await this.sendMessage(recipient, message.content);
-        successful.push(recipient);
+        log(`Preparing to send to: ${recipient}`, "whatsapp");
+        
+        // Variação aleatória do delay entre mensagens (entre 1-3 segundos)
+        const delay = 1000 + Math.floor(Math.random() * 2000);
+        
+        // Tentar enviar a mensagem
+        const messageId = await this.sendMessage(recipient, message.content);
+        
+        if (messageId) {
+          log(`Successfully sent to ${recipient}`, "whatsapp");
+          successful.push(recipient);
+        } else {
+          log(`No message ID returned for ${recipient}`, "whatsapp");
+          failed.push(recipient);
+        }
       } catch (error) {
         log(`Failed to send message to ${recipient}: ${error}`, "whatsapp");
         failed.push(recipient);
       }
 
-      // Add a small delay between messages to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Delay variável entre mensagens para evitar detecção de automação
+      const randomDelay = 1000 + Math.floor(Math.random() * 2000);
+      await new Promise(resolve => setTimeout(resolve, randomDelay));
     }
 
+    log(`Bulk message sending complete: ${successful.length} successful, ${failed.length} failed`, "whatsapp");
     return { successful, failed };
   }
 
@@ -265,12 +311,93 @@ class WhatsAppClient extends EventEmitter {
 
   async getWhatsAppGroups(): Promise<WhatsAppChat[]> {
     try {
-      const chats = await this.getWhatsAppChats();
-      return chats.filter(chat => chat.isGroup);
+      log(`Getting WhatsApp groups...`, "whatsapp");
+      
+      if (!this.isAuthenticated || !this.client) {
+        throw new Error("WhatsApp client not ready or not authenticated");
+      }
+      
+      // Tentar obter grupos diretamente (mais eficiente)
+      try {
+        const chats = await this.client.getChats();
+        const groupChats = chats.filter(chat => chat.isGroup);
+        
+        // Formatando grupos
+        const formattedGroups: WhatsAppChat[] = await Promise.all(
+          groupChats.map(async (group) => {
+            let participantsCount = 0;
+            
+            // Tentar obter metadata do grupo incluindo contagem de participantes
+            try {
+              if (group.groupMetadata) {
+                participantsCount = group.groupMetadata.participants?.length || 0;
+              } else {
+                // Tentar obter metadata se não estiver já carregada
+                const metadata = await group.getMetadata();
+                participantsCount = metadata.participants?.length || 0;
+              }
+            } catch (metaError) {
+              log(`Error getting group metadata: ${metaError}`, "whatsapp");
+            }
+            
+            return {
+              id: group.id._serialized,
+              name: group.name || 'Grupo sem nome',
+              isGroup: true,
+              participantsCount,
+              timestamp: group.timestamp || Date.now(),
+              unreadCount: group.unreadCount || 0
+            };
+          })
+        );
+        
+        // Salvar grupos no banco de dados para persistência
+        try {
+          // TODO: Implementar persistência dos grupos no banco
+          // Este código seria utilizado para salvar grupos no banco
+          // Exemplo:
+          // for (const group of formattedGroups) {
+          //   await storage.createOrUpdateWhatsappGroup({
+          //     whatsappId: group.id,
+          //     name: group.name,
+          //     participantsCount: group.participantsCount,
+          //     lastActivity: new Date(group.timestamp)
+          //   });
+          // }
+          
+          log(`Successfully retrieved ${formattedGroups.length} WhatsApp groups`, "whatsapp");
+        } catch (dbError) {
+          log(`Error saving WhatsApp groups to database: ${dbError}`, "whatsapp");
+        }
+        
+        return formattedGroups;
+      } catch (error) {
+        log(`Error getting WhatsApp groups directly: ${error}`, "whatsapp");
+        throw error; // Propagar para usar o fallback abaixo
+      }
     } catch (error) {
       log(`Error getting WhatsApp groups: ${error}`, "whatsapp");
-      // Em caso de erro, tenta buscar do banco de dados
-      return [];
+      
+      // Fallback: tentar obter do banco de dados
+      try {
+        // TODO: Implementar recuperação de grupos do banco
+        // Exemplo:
+        // const savedGroups = await storage.getWhatsAppGroups();
+        // return savedGroups.map(g => ({
+        //   id: g.whatsappId,
+        //   name: g.name,
+        //   isGroup: true,
+        //   participantsCount: g.participantsCount,
+        //   timestamp: g.lastActivity.getTime(),
+        //   unreadCount: 0
+        // }));
+        
+        log(`Fallback: Could not retrieve WhatsApp groups`, "whatsapp");
+        return []; 
+      } catch (dbError) {
+        log(`Error getting WhatsApp groups from database: ${dbError}`, "whatsapp");
+        return [];
+      }
     }
   }
 
@@ -301,13 +428,49 @@ class WhatsAppClient extends EventEmitter {
         });
       
       // Armazenar no banco de dados para persistência
-      // Este é um bom lugar para implementar a persistência
+      try {
+        // TODO: Implementar persistência no banco
+        // Este código seria utilizado para salvar contatos no banco de dados
+        // Exemplo:
+        // for (const contact of formattedContacts) {
+        //   await storage.createWhatsAppContact({
+        //     whatsappId: contact.id,
+        //     name: contact.name,
+        //     phoneNumber: contact.number,
+        //     isGroup: false,
+        //     userId: 1 // ID do usuário autenticado
+        //   });
+        // }
+        
+        log(`Successfully retrieved ${formattedContacts.length} WhatsApp contacts`, "whatsapp");
+      } catch (dbError) {
+        log(`Error saving WhatsApp contacts to database: ${dbError}`, "whatsapp");
+      }
       
       return formattedContacts;
     } catch (error) {
       log(`Error getting WhatsApp contacts: ${error}`, "whatsapp");
+      
       // Em caso de erro, tenta buscar do banco de dados
-      return [];
+      try {
+        // TODO: Implementar recuperação a partir do banco
+        // Exemplo:
+        // const savedContacts = await storage.getWhatsAppContacts(1); // ID do usuário
+        // return savedContacts.map(c => ({
+        //   id: c.whatsappId,
+        //   name: c.name,
+        //   number: c.phoneNumber,
+        //   isMyContact: true,
+        //   isGroup: c.isGroup,
+        //   profilePicUrl: undefined
+        // }));
+        
+        log(`Fallback: Could not retrieve WhatsApp contacts`, "whatsapp");
+        return [];
+      } catch (dbError) {
+        log(`Error getting WhatsApp contacts from database: ${dbError}`, "whatsapp");
+        return [];
+      }
     }
   }
 
