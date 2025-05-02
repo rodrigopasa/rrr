@@ -95,6 +95,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint para desconectar o WhatsApp e forçar um novo QR code
+  app.post("/api/whatsapp/disconnect", isAuthenticated, async (req, res) => {
+    try {
+      const success = await whatsappClient.disconnect();
+      if (success) {
+        res.status(200).json({ 
+          message: "WhatsApp desconectado com sucesso. Novo QR code será gerado.", 
+          status: whatsappClient.getStatus() 
+        });
+      } else {
+        res.status(500).json({ message: "Falha ao desconectar o WhatsApp" });
+      }
+    } catch (error) {
+      console.error("Erro ao desconectar WhatsApp:", error);
+      res.status(500).json({ 
+        message: "Erro ao desconectar WhatsApp", 
+        error: error instanceof Error ? error.message : "Erro desconhecido" 
+      });
+    }
+  });
+  
   // Obter chats do WhatsApp (conversas individuais e grupos)
   app.get("/api/whatsapp/chats", isAuthenticated, async (req, res) => {
     try {

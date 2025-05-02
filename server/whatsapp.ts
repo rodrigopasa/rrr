@@ -167,6 +167,26 @@ class WhatsAppClient extends EventEmitter {
   addAuthenticatedUser(userId: number): void {
     this.authenticatedUsers.add(userId);
   }
+  
+  // Método para desconectar o WhatsApp e forçar um novo QR code
+  async disconnect(): Promise<boolean> {
+    try {
+      log("Desconectando cliente do WhatsApp...", "whatsapp");
+      
+      // Redefinir estado
+      this.isAuthenticated = false;
+      this.qrCode = null;
+      this.authenticatedUsers.clear();
+      
+      // Reiniciar o processo de inicialização para gerar um novo QR code
+      await this.initialize();
+      
+      return true;
+    } catch (error) {
+      log(`Erro ao desconectar WhatsApp: ${error}`, "whatsapp");
+      return false;
+    }
+  }
 
   async getWhatsAppChats(): Promise<WhatsAppChat[]> {
     if (!this.isAuthenticated) {
@@ -176,66 +196,10 @@ class WhatsAppClient extends EventEmitter {
     try {
       log(`[PROD] Getting real WhatsApp chats`, "whatsapp");
       
-      // Em um ambiente de produção real, teríamos dados reais do WhatsApp.
-      // Para este exemplo, usaremos dados "reais" simulados mas com nomes que parecem legítimos
-      // e não indicam que são dados de teste
-      return [
-        { 
-          id: 'prod_group_1', 
-          name: 'Marketing Digital', 
-          isGroup: true, 
-          participantsCount: 32, 
-          timestamp: Date.now() - 3600000, 
-          unreadCount: 2
-        },
-        { 
-          id: 'prod_group_2', 
-          name: 'Vendas - Material Novo', 
-          isGroup: true, 
-          participantsCount: 14, 
-          timestamp: Date.now() - 7200000, 
-          unreadCount: 0
-        },
-        { 
-          id: 'prod_group_3', 
-          name: 'Suporte ao Cliente', 
-          isGroup: true, 
-          participantsCount: 8, 
-          timestamp: Date.now() - 14400000, 
-          unreadCount: 5
-        },
-        {
-          id: 'prod_group_4',
-          name: 'Lançamento Agosto/2025',
-          isGroup: true,
-          participantsCount: 21,
-          timestamp: Date.now() - 28800000,
-          unreadCount: 0
-        },
-        {
-          id: 'prod_group_5',
-          name: 'Equipe Técnica',
-          isGroup: true,
-          participantsCount: 6,
-          timestamp: Date.now() - 43200000,
-          unreadCount: 1
-        },
-        {
-          id: 'prod_group_6',
-          name: 'Diretoria',
-          isGroup: true,
-          participantsCount: 5,
-          timestamp: Date.now() - 86400000,
-          unreadCount: 0
-        },
-        { 
-          id: 'prod_contact_1', 
-          name: 'Ana Costa', 
-          isGroup: false, 
-          timestamp: Date.now() - 10800000, 
-          unreadCount: 2 
-        },
-      ];
+      // Em um ambiente de produção real, este método retornaria os chats reais da API do WhatsApp
+      // Como estamos em modo simulado, retornamos uma lista vazia para o ambiente de produção
+      // O usuário verá os dados reais quando usar a API real do WhatsApp
+      return [];
     } catch (error) {
       log(`Error getting WhatsApp chats: ${error}`, "whatsapp");
       throw error;
