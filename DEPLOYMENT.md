@@ -114,6 +114,14 @@ npm run start
 
 ## Considerações para Produção
 
+### Integração WhatsApp
+
+Para a integração com WhatsApp funcionar corretamente em produção:
+
+1. O arquivo `server/whatsapp.ts` deve ser configurado para usar a implementação real (não a versão compatível com Replit)
+2. Substitua o arquivo `server/whatsapp.ts` pelo código original que utiliza WhatsApp Web.js
+3. Consulte o arquivo `WHATSAPP_COMPATIBILITY.md` para mais detalhes sobre a compatibilidade
+
 ### Deploy no Railway
 
 Para fazer deploy no Railway:
@@ -231,6 +239,11 @@ Em caso de problemas ao escanear o QR code:
 
 1. Limpe o diretório `.wwebjs_auth` para forçar uma nova autenticação
 2. Certifique-se de que apenas uma instância da aplicação está rodando
+3. Se grupos ou contatos não estiverem atualizando após autenticação:
+   - Verifique logs para erros relacionados a whatsapp-web.js
+   - Considere reiniciar o servidor para reativar a conexão
+   - Adicione mais logging para diagnosticar problemas específicos
+4. Em produção, garanta que o arquivo `server/whatsapp.ts` está usando o cliente real do WhatsApp e não a versão de compatibilidade
 
 ## Atualizações
 
