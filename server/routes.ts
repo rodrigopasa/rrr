@@ -149,6 +149,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to send message to WhatsApp group" });
     }
   });
+  
+  // Agendar mensagens para grupos
+  app.post("/api/whatsapp/schedule-group-messages", isAuthenticated, async (req, res) => {
+    try {
+      const schema = z.object({
+        groupIds: z.array(z.string()),
+        message: z.string(),
+        scheduledDate: z.string(),
+        scheduledTime: z.string()
+      });
+      
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid request body" });
+      }
+      
+      const { groupIds, message, scheduledDate, scheduledTime } = parsed.data;
+      const userId = req.user!.id;
+      
+      if (groupIds.length === 0) {
+        return res.status(400).json({ message: "No groups specified" });
+      }
+      
+      // Converter data e hora para um objeto Date
+      // Usando fuso horário de São Paulo (UTC-3)
+      const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}:00-03:00`);
+      
+      // Verificar se a data é futura
+      if (scheduledDateTime <= new Date()) {
+        return res.status(400).json({ message: "Scheduled time must be in the future" });
+      }
+      
+      // Criar registro de mensagem agendada
+      const messageRecord = await storage.createMessage({
+        userId,
+        subject: `Mensagem agendada para ${groupIds.length} grupos`,
+        content: message,
+        isScheduled: true,
+        scheduledAt: scheduledDateTime,
+        status: 'scheduled'
+      });
+      
+      // Agendar a mensagem para cada grupo
+      for (const groupId of groupIds) {
+        scheduleMessage({
+          id: `${messageRecord.id}_${groupId}`,
+          userId,
+          recipients: [groupId],
+          content: message,
+          isGroup: true
+        }, scheduledDateTime);
+      }
+      
+      res.status(200).json({ 
+        message: 'Group messages scheduled successfully',
+        scheduled: true,
+        messageId: messageRecord.id,
+        scheduledFor: scheduledDateTime
+      });
+    } catch (error) {
+      console.error("Error scheduling messages to WhatsApp groups:", error);
+      res.status(500).json({ 
+        message: "Failed to schedule messages to WhatsApp groups",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
 
   // Initialize HTTP server
   const httpServer = createServer(app);

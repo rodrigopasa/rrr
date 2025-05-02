@@ -8,6 +8,7 @@ type ScheduledMessage = {
   recipients: string[];
   content: string;
   subject?: string;
+  isGroup?: boolean; // Indica se os destinatários são grupos
 };
 
 // Map to store scheduled tasks
@@ -15,17 +16,25 @@ const scheduledTasks = new Map<string, NodeJS.Timeout>();
 
 /**
  * Schedule a message to be sent at a specific time
+ * Uses São Paulo timezone (UTC-3)
  */
 export function scheduleMessage(message: ScheduledMessage, scheduledTime: Date): void {
+  // Converter para timestamp considerando o fuso horário
   const now = new Date();
   const delay = scheduledTime.getTime() - now.getTime();
   
-  if (delay <= 0) {
+  // Permitir agendamento mesmo que seja para poucos minutos no futuro
+  if (delay < 0) {
     log(`Cannot schedule message ${message.id} in the past`, 'scheduler');
     return;
   }
   
-  log(`Scheduling message ${message.id} to be sent in ${Math.round(delay / 1000 / 60)} minutes`, 'scheduler');
+  const minutes = Math.round(delay / 1000 / 60);
+  const timeDescription = minutes < 60 
+    ? `${minutes} minuto${minutes !== 1 ? 's' : ''}` 
+    : `${Math.round(minutes / 60)} hora${Math.round(minutes / 60) !== 1 ? 's' : ''} e ${minutes % 60} minuto${minutes % 60 !== 1 ? 's' : ''}`;
+  
+  log(`Scheduling message ${message.id} to be sent in ${timeDescription}`, 'scheduler');
   
   // Create a timeout to send the message
   const timeout = setTimeout(async () => {
@@ -39,11 +48,23 @@ export function scheduleMessage(message: ScheduledMessage, scheduledTime: Date):
         return;
       }
       
-      // Send the message
-      const result = await whatsappClient.sendBulkMessages(message);
-      
-      // Update message status in storage (would be done in a real app)
-      log(`Message ${message.id} sent to ${result.successful.length} recipients, failed for ${result.failed.length} recipients`, 'scheduler');
+      if (message.isGroup) {
+        // Se for mensagem para grupos
+        for (const groupId of message.recipients) {
+          try {
+            await whatsappClient.sendMessageToGroup(groupId, message.content);
+            log(`Group message sent to ${groupId}`, 'scheduler');
+            // Pequeno atraso entre mensagens para não sobrecarregar
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } catch (err) {
+            log(`Failed to send group message to ${groupId}: ${err}`, 'scheduler');
+          }
+        }
+      } else {
+        // Se for mensagem para contatos normais
+        const result = await whatsappClient.sendBulkMessages(message);
+        log(`Message ${message.id} sent to ${result.successful.length} recipients, failed for ${result.failed.length} recipients`, 'scheduler');
+      }
       
       // Clean up the scheduled task
       scheduledTasks.delete(message.id);
@@ -71,10 +92,38 @@ export function cancelScheduledMessage(messageId: string): boolean {
 }
 
 /**
+ * Get all scheduled messages
+ */
+export function getScheduledMessages(): string[] {
+  return Array.from(scheduledTasks.keys());
+}
+
+/**
  * Load scheduled messages from storage (would be used in a real app on startup)
  */
 export async function loadScheduledMessages(): Promise<void> {
   log('Loading scheduled messages from storage', 'scheduler');
-  // In a real app, we would load scheduled messages from storage here
-  // For this demo, we'll just log that it's happening
+  try {
+    // Em uma aplicação real, carregaríamos as mensagens agendadas do banco de dados
+    // e reagendaríamos aquelas que ainda estão no futuro
+    
+    /* Exemplo de código para uma implementação real
+    const pendingMessages = await storage.getPendingScheduledMessages();
+    
+    for (const message of pendingMessages) {
+      if (message.scheduledAt > new Date()) {
+        scheduleMessage({
+          id: message.id,
+          userId: message.userId,
+          recipients: message.recipients,
+          content: message.content,
+          subject: message.subject,
+          isGroup: message.isGroup
+        }, message.scheduledAt);
+      }
+    }
+    */
+  } catch (error) {
+    log(`Error loading scheduled messages: ${error}`, 'scheduler');
+  }
 }
