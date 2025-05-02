@@ -18,7 +18,7 @@ import {
   Send, Users, Smartphone, Upload, 
   ListChecks, Loader2, CheckCircle2, AlertCircle 
 } from "lucide-react";
-import MessagePreview from "./message-preview";
+import { AdvancedMessageEditor, MessagePreview } from "./advanced-message-editor";
 
 // Validação de formulário
 const formSchema = z.object({
@@ -184,10 +184,14 @@ Exemplo:
                   <FormItem>
                     <FormLabel>Mensagem</FormLabel>
                     <FormControl>
-                      <Textarea
+                      <AdvancedMessageEditor
+                        initialValue={field.value}
+                        onChange={field.onChange}
                         placeholder="Digite sua mensagem aqui..."
-                        className="h-[150px]"
-                        {...field}
+                        minHeight="200px"
+                        showToolbar={true}
+                        showEmojis={true}
+                        className="border rounded-md"
                       />
                     </FormControl>
                     <FormMessage />

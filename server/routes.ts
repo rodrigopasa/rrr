@@ -7,6 +7,7 @@ import { handleSendMessage, handleSendDirectMessage, getRecentMessages, getAllMe
 import { getDashboardStats } from "./controllers/dashboard-controller";
 import { getUpcomingSchedules, getAllSchedules } from "./controllers/schedule-controller";
 import { whatsappClient } from "./whatsapp";
+import { scheduleMessage } from "./services/message-scheduler";
 import multer from "multer";
 import { z } from "zod";
 
