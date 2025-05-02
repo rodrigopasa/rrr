@@ -1,5 +1,4 @@
-import Sidebar from "@/components/layout/sidebar";
-import TopNav from "@/components/layout/top-nav";
+import MainLayout from "@/components/layout/main-layout";
 import WhatsAppQRCodeSetup from "@/components/whatsapp/qr-code-setup";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";

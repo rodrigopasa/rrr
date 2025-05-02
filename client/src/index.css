@@ -3,48 +3,84 @@
 @tailwind utilities;
 
 :root {
-      --background: 0 0% 100%;
---foreground: 20 14.3% 4.1%;
---muted: 25 5.3% 95.9%;
---muted-foreground: 25 5.3% 44.7%;
---popover: 0 0% 100%;
---popover-foreground: 20 14.3% 4.1%;
---card: 0 0% 100%;
---card-foreground: 20 14.3% 4.1%;
---border: 20 5.9% 90%;
---input: 20 5.9% 90%;
---primary: 25 95% 53%;
---primary-foreground: 0 0% 100%;
---secondary: 25 5.3% 95.9%;
---secondary-foreground: 24 9.8% 10%;
---accent: 25 5.3% 95.9%;
---accent-foreground: 24 9.8% 10%;
---destructive: 0 84.2% 60.2%;
---destructive-foreground: 60 9.1% 97.8%;
---ring: 25 95% 53%;
---radius: 0.5rem;
+  /* Cores base */
+  --background: 0 0% 100%;
+  --foreground: 210 12% 16%;
+  
+  /* Paleta principal - Azul */
+  --blue-50: 213 100% 98%;
+  --blue-100: 213 100% 95%;
+  --blue-200: 213 100% 90%;
+  --blue-300: 213 100% 80%;
+  --blue-400: 213 100% 70%;
+  --blue-500: 213 100% 60%;
+  --blue-600: 213 80% 50%;
+  --blue-700: 213 80% 40%;
+  --blue-800: 213 80% 30%;
+  --blue-900: 213 80% 20%;
+  --blue-950: 213 80% 10%;
+  
+  /* Paleta secundária - Laranja */
+  --orange-50: 30 100% 98%;
+  --orange-100: 30 100% 95%;
+  --orange-200: 30 100% 90%;
+  --orange-300: 30 85% 80%;
+  --orange-400: 30 85% 70%;
+  --orange-500: 30 90% 60%;
+  --orange-600: 30 90% 50%;
+  --orange-700: 30 90% 40%;
+  --orange-800: 30 90% 30%;
+  --orange-900: 30 90% 20%;
+  --orange-950: 30 90% 10%;
+  
+  /* Tema */
+  --muted: 210 20% 96%;
+  --muted-foreground: 210 12% 40%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 12% 16%;
+  --card: 0 0% 100%;
+  --card-foreground: 210 12% 16%;
+  --border: 210 20% 92%;
+  --input: 210 20% 92%;
+  
+  /* Cores funcionais */
+  --primary: 213 80% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 30 90% 50%;
+  --secondary-foreground: 0 0% 100%;
+  --accent: 210 20% 96%;
+  --accent-foreground: 213 80% 30%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 213 80% 60%;
+  --radius: 0.5rem;
   }
   .dark {
-      --background: 240 10% 3.9%;
---foreground: 0 0% 98%;
---muted: 240 3.7% 15.9%;
---muted-foreground: 240 5% 64.9%;
---popover: 240 10% 3.9%;
---popover-foreground: 0 0% 98%;
---card: 240 10% 3.9%;
---card-foreground: 0 0% 98%;
---border: 240 3.7% 15.9%;
---input: 240 3.7% 15.9%;
---primary: 25 95% 50%;
---primary-foreground: 0 0% 100%;
---secondary: 240 3.7% 15.9%;
---secondary-foreground: 0 0% 98%;
---accent: 240 3.7% 15.9%;
---accent-foreground: 0 0% 98%;
---destructive: 0 62.8% 30.6%;
---destructive-foreground: 0 0% 98%;
---ring: 25 95% 50%;
---radius: 0.5rem;
+  /* Cores base */
+  --background: 213 30% 8%;
+  --foreground: 210 20% 98%;
+  
+  /* Tema escuro */
+  --muted: 213 25% 15%;
+  --muted-foreground: 210 20% 70%;
+  --popover: 213 30% 10%;
+  --popover-foreground: 210 20% 98%;
+  --card: 213 30% 10%;
+  --card-foreground: 210 20% 98%;
+  --border: 213 25% 18%;
+  --input: 213 25% 18%;
+  
+  /* Cores funcionais */
+  --primary: 213 70% 55%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 30 90% 55%;
+  --secondary-foreground: 0 0% 100%;
+  --accent: 213 25% 20%;
+  --accent-foreground: 213 70% 80%;
+  --destructive: 0 84% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 213 70% 55%;
+  --radius: 0.5rem;
   }
 
 @layer base {
@@ -54,6 +90,46 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+  }
+
+  /* Estilos personalizados para botões e elementos interativos */
+  .btn-primary {
+    @apply bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white;
+  }
+
+  .btn-secondary {
+    @apply bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white;
+  }
+
+  /* Cartões com bordas gradientes */
+  .card-gradient {
+    @apply border border-transparent relative;
+    background-clip: padding-box;
+  }
+
+  .card-gradient::before {
+    content: '';
+    @apply absolute inset-0 rounded-lg -z-10 bg-gradient-to-r from-blue-500 to-orange-500;
+    margin: -1px;
+  }
+
+  /* Cabeçalhos com gradiente */
+  .heading-gradient {
+    @apply bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent;
+  }
+
+  /* Botões com efeito hover aprimorado */
+  .btn-hover-effect {
+    @apply relative overflow-hidden;
+  }
+
+  .btn-hover-effect::after {
+    content: '';
+    @apply absolute inset-0 bg-white opacity-0 transition-opacity duration-300;
+  }
+
+  .btn-hover-effect:hover::after {
+    @apply opacity-10;
   }
 }
 
