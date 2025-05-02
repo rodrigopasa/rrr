@@ -219,50 +219,10 @@ class WhatsAppClient extends EventEmitter {
     try {
       log(`[PROD] Getting real WhatsApp contacts`, "whatsapp");
       
-      // Em ambiente de produção real, teríamos contatos reais do WhatsApp
-      // Aqui, usamos "dados reais" simulados com nomes que parecem legítimos
-      return [
-        { 
-          id: 'prod_contact_1', 
-          name: 'Ana Costa', 
-          number: '5511987654321',
-          isMyContact: true,
-          isGroup: false,
-          profilePicUrl: undefined
-        },
-        { 
-          id: 'prod_contact_2', 
-          name: 'Roberto Almeida', 
-          number: '5511987654322',
-          isMyContact: true,
-          isGroup: false,
-          profilePicUrl: undefined
-        },
-        { 
-          id: 'prod_contact_3', 
-          name: 'Carla Mendes', 
-          number: '5511987654323',
-          isMyContact: true,
-          isGroup: false,
-          profilePicUrl: undefined
-        },
-        { 
-          id: 'prod_contact_4', 
-          name: 'Paulo Ribeiro', 
-          number: '5511987654324',
-          isMyContact: true,
-          isGroup: false,
-          profilePicUrl: undefined
-        },
-        { 
-          id: 'prod_contact_5', 
-          name: 'Fernanda Santos', 
-          number: '5511987654325',
-          isMyContact: true,
-          isGroup: false,
-          profilePicUrl: undefined
-        },
-      ];
+      // Em um ambiente de produção real, este método retornaria os contatos reais da API do WhatsApp
+      // Como estamos em modo simulado, retornamos uma lista vazia para o ambiente de produção
+      // O usuário verá os dados reais quando usar a API real do WhatsApp
+      return [];
     } catch (error) {
       log(`Error getting WhatsApp contacts: ${error}`, "whatsapp");
       throw error;
@@ -275,14 +235,14 @@ class WhatsAppClient extends EventEmitter {
     }
 
     try {
-      // Simular envio de mensagem para grupo em ambiente de produção
+      // Em um ambiente de produção real, este método enviaria a mensagem para o grupo real
       log(`[PROD] Sending message to group ${groupId}: ${message}`, "whatsapp");
       
-      // Simular um pequeno atraso como se estivesse realmente enviando
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Simular um pequeno atraso para o processamento da mensagem
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Gerar um ID único para a mensagem enviada
-      return `real_group_message_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      // Retornar um ID de mensagem como seria em produção real
+      return `msg_${Date.now()}`;
     } catch (error) {
       log(`Error sending WhatsApp message to group: ${error}`, "whatsapp");
       throw error;

@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import MessagePreview from "./message-preview";
 import MessageTemplates from "./message-templates";
+import { AdvancedMessageEditor } from "./advanced-message-editor";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -398,10 +399,14 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
                   <FormItem>
                     <FormLabel>Mensagem para os grupos</FormLabel>
                     <FormControl>
-                      <Textarea
+                      <AdvancedMessageEditor
+                        initialValue={field.value}
+                        onChange={field.onChange}
                         placeholder="Digite sua mensagem aqui..."
-                        className="h-[120px]"
-                        {...field}
+                        minHeight="200px"
+                        showToolbar={true}
+                        showEmojis={true}
+                        className="border rounded-md"
                       />
                     </FormControl>
                     <FormMessage />

@@ -67,6 +67,35 @@ export default function WhatsAppQRCodeSetup() {
     });
   };
 
+  const handleDisconnect = async () => {
+    try {
+      const response = await fetch('/api/whatsapp/disconnect', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao desconectar WhatsApp');
+      }
+
+      // Reset QR state and refresh
+      setRefreshKey(prev => prev + 1);
+      refetch();
+      refetchQRCode();
+
+      toast({
+        title: "WhatsApp desconectado",
+        description: "Seu WhatsApp foi desconectado. Escaneie o novo QR code para reconectar.",
+      });
+    } catch (error) {
+      console.error('Erro ao desconectar WhatsApp:', error);
+      toast({
+        title: "Erro ao desconectar",
+        description: "Não foi possível desconectar o WhatsApp. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card className="w-full border-0 shadow-md">
       <CardHeader className="bg-gradient-to-r from-green-50 to-white dark:from-green-950/30 dark:to-gray-950 rounded-t-lg border-b">
@@ -244,15 +273,29 @@ export default function WhatsAppQRCodeSetup() {
           </Link>
         </Button>
         
-        <Button 
-          onClick={handleRefresh}
-          variant="outline"
-          className="border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400"
-          disabled={isLoading || isLoadingQRCode}
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Atualizar Status
-        </Button>
+        <div className="flex gap-2">
+          {data?.isAuthenticated && (
+            <Button
+              onClick={handleDisconnect}
+              variant="outline"
+              className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400"
+              disabled={isLoading}
+            >
+              <i className="ri-logout-box-line mr-2"></i>
+              Desconectar WhatsApp
+            </Button>
+          )}
+          
+          <Button 
+            onClick={handleRefresh}
+            variant="outline"
+            className="border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400"
+            disabled={isLoading || isLoadingQRCode}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Atualizar Status
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );
