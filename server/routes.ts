@@ -10,6 +10,7 @@ import { whatsappClient } from "./whatsapp";
 import { scheduleMessage } from "./services/message-scheduler";
 import multer from "multer";
 import { z } from "zod";
+import { log } from "./vite";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Healthcheck endpoint for Railway

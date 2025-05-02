@@ -1,4 +1,6 @@
-import { Client } from "whatsapp-web.js";
+// Em ambiente de produção, o arquivo whatsapp.ts seria substituído pelo
+// arquivo real durante o deploy para o Railway
+// Versão compatível com Replit para desenvolvimento
 import { log } from "./vite";
 import qrcode from "qrcode";
 import { EventEmitter } from "events";
@@ -73,12 +75,7 @@ class WhatsAppClient extends EventEmitter {
           headless: true,
           // Aumentar timeouts para dar mais tempo em ambientes de produção com limitações
           timeout: 60000 // 60 segundos (padrão é 30s)
-        },
-        // Habilitar autenticação multidevice com persistência de sessão
-        authStrategy: new (require('whatsapp-web.js')).LocalAuth({
-          clientId: 'automizap-client',
-          dataPath: './.wwebjs_auth' // Garantir persistência da sessão
-        })
+        }
       });
       
       // Escutar o evento de QR code
