@@ -210,11 +210,15 @@ export async function handleSendDirectMessage(req: Request, res: Response) {
         }
         
         return cleaned;
-      });
+      })
+      .filter(num => num.length >= 11); // Garante que o número tenha pelo menos DDD + número
 
     if (phoneNumbers.length === 0) {
       return res.status(400).json({ message: 'No valid phone numbers specified' });
     }
+
+    // Log dos números formatados para debugging
+    console.log("Números formatados para envio:", phoneNumbers);
 
     // Verificar se o cliente WhatsApp está pronto
     const status = whatsappClient.getStatus();
@@ -232,20 +236,26 @@ export async function handleSendDirectMessage(req: Request, res: Response) {
       // Enviar cada mensagem individualmente
       let successCount = 0;
       let failureCount = 0;
+      let errors = [];
 
       for (const phone of phoneNumbers) {
         try {
+          console.log(`Tentando enviar mensagem para: ${phone}`);
           const result = await whatsappClient.sendMessage(phone, message);
+          console.log(`Resultado do envio para ${phone}:`, result);
+          
           if (result) {
             successCount++;
           } else {
             failureCount++;
+            errors.push(`Falha ao enviar para ${phone}: Nenhum resultado retornado.`);
           }
           // Pequeno delay para não sobrecarregar
           await new Promise(resolve => setTimeout(resolve, 300));
         } catch (err) {
           console.error(`Failed to send to ${phone}:`, err);
           failureCount++;
+          errors.push(`Falha ao enviar para ${phone}: ${err instanceof Error ? err.message : "Erro desconhecido"}`);
         }
       }
 
@@ -254,7 +264,8 @@ export async function handleSendDirectMessage(req: Request, res: Response) {
         successful: successCount,
         failed: failureCount,
         messageId: newMessage.id,
-        phoneNumbers
+        phoneNumbers,
+        errors: errors.length > 0 ? errors : undefined
       });
     } catch (error) {
       console.error('Error sending direct messages:', error);

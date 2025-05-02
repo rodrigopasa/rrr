@@ -320,14 +320,25 @@ class WhatsAppClient extends EventEmitter {
   }
 
   private formatPhoneNumber(phoneNumber: string): string {
+    // Se começar com +, remover o + e manter o restante dos dígitos
+    if (phoneNumber.startsWith("+")) {
+      return phoneNumber.substring(1).replace(/\D/g, "");
+    }
+    
     // Remove any non-digit characters
     let cleaned = phoneNumber.replace(/\D/g, "");
     
-    // If the number doesn't start with a '+', add the default country code
-    if (!cleaned.startsWith("55") && cleaned.length === 11) {
-      cleaned = `55${cleaned}`;
+    // Se o número já começar com 55 (Brasil), mantém como está
+    if (cleaned.startsWith("55") && cleaned.length >= 12) {
+      return cleaned;
     }
     
+    // Se o número tiver 10-11 dígitos (DDD + número local), adiciona 55 da frente
+    if (cleaned.length >= 10 && cleaned.length <= 11) {
+      return `55${cleaned}`;
+    }
+    
+    // Se não se encaixar em nenhum padrão acima, retorna como está
     return cleaned;
   }
 }

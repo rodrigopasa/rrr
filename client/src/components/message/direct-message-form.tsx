@@ -98,33 +98,51 @@ export default function DirectMessageForm() {
         failed: 0
       });
       
-      // Simular envio para cada número (em um caso real, seria uma chamada à API)
-      for (let i = 0; i < phoneNumbers.length; i++) {
-        const phoneNumber = phoneNumbers[i];
-        try {
-          // Fazer chamada à API para enviar mensagem
-          const response = await fetch('/api/whatsapp/send', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              to: phoneNumber,
-              message: data.message
-            }),
+      // Enviar para todos os números de uma vez
+      try {
+        // Fazer uma única chamada à API para todos os números
+        const response = await fetch('/api/whatsapp/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: phoneNumbers.join(','), // Enviar todos os números em uma única string separada por vírgula
+            message: data.message
+          }),
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          setSendingStatus({
+            total: phoneNumbers.length,
+            sent: result.successful || 0,
+            failed: result.failed || 0
           });
           
-          if (response.ok) {
-            setSendingStatus(prev => ({ ...prev, sent: prev.sent + 1 }));
-          } else {
-            setSendingStatus(prev => ({ ...prev, failed: prev.failed + 1 }));
-          }
+          console.log("Resultado do envio:", result);
+        } else {
+          const errorText = await response.text();
+          console.error("Erro na resposta:", errorText);
           
-          // Pequeno delay para não sobrecarregar o WhatsApp
-          await new Promise(resolve => setTimeout(resolve, 300));
-        } catch (error) {
-          setSendingStatus(prev => ({ ...prev, failed: prev.failed + 1 }));
+          // Se a resposta falhar completamente, considerar todos como falha
+          setSendingStatus(prev => ({ 
+            ...prev,
+            failed: phoneNumbers.length 
+          }));
+          
+          throw new Error(`Erro no servidor: ${response.status} ${errorText}`);
         }
+      } catch (error) {
+        console.error("Erro durante o envio:", error);
+        // Em caso de erro na chamada, considerar todos como falha
+        setSendingStatus({
+          total: phoneNumbers.length,
+          sent: 0,
+          failed: phoneNumbers.length
+        });
+        
+        throw error; // Repassar o erro para ser tratado no próximo catch
       }
       
       toast({
