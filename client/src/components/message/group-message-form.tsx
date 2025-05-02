@@ -103,7 +103,7 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
   });
 
   // Filtrar grupos com base no termo de busca
-  const filteredGroups = groups.filter(group => 
+  const filteredGroups = groups.filter((group: WhatsAppGroup) => 
     group.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -279,7 +279,7 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
   
   // Número total de participantes nos grupos selecionados
   const totalParticipants = selectedGroups.reduce((total, groupId) => {
-    const group = groups.find(g => g.id === groupId);
+    const group = groups.find((g: WhatsAppGroup) => g.id === groupId);
     return total + (group?.participantsCount || 0);
   }, 0);
 
@@ -331,7 +331,7 @@ export default function GroupMessageForm({ onClose }: { onClose?: () => void }) 
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {filteredGroups.map((group) => (
+                        {filteredGroups.map((group: WhatsAppGroup) => (
                           <Card key={group.id} className="cursor-pointer hover:bg-gray-50 border-gray-200">
                             <CardContent className="p-3 flex items-center">
                               <Checkbox
