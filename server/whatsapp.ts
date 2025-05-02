@@ -329,12 +329,21 @@ class WhatsAppClient extends EventEmitter {
             
             // Tentar obter metadata do grupo incluindo contagem de participantes
             try {
-              if (group.groupMetadata) {
-                participantsCount = group.groupMetadata.participants?.length || 0;
-              } else {
-                // Tentar obter metadata se não estiver já carregada
-                const metadata = await group.getMetadata();
-                participantsCount = metadata.participants?.length || 0;
+              // A API WhatsApp Web.js tem uma estrutura específica para metadados
+              // que pode variar de acordo com a versão da biblioteca
+              // Estamos usando uma abordagem mais segura com type assertion
+              const groupAny = group as any;
+              
+              if (groupAny.groupMetadata) {
+                participantsCount = (groupAny.groupMetadata.participants || []).length;
+              } else if (typeof groupAny.getMetadata === 'function') {
+                // Tentar obter metadata se não estiver já carregada e o método existir
+                try {
+                  const metadata = await groupAny.getMetadata();
+                  participantsCount = (metadata?.participants || []).length;
+                } catch (innerError) {
+                  log(`Cannot get group metadata: ${innerError}`, "whatsapp");
+                }
               }
             } catch (metaError) {
               log(`Error getting group metadata: ${metaError}`, "whatsapp");

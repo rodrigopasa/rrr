@@ -350,27 +350,55 @@ export class DatabaseStorage implements IStorage {
     messageContent: string, 
     subject?: string
   ): Promise<Message> {
-    // 1. Criar entrada da mensagem
+    console.log(`Sending direct message to ${phoneNumbers.length} recipients`);
+    
+    // 1. Validação dos números
+    const validPhoneNumbers = phoneNumbers.filter(phone => {
+      // Mínimo 10 dígitos (DDD + número sem o país)
+      return phone.replace(/\D/g, "").length >= 10;
+    });
+    
+    if (validPhoneNumbers.length === 0) {
+      throw new Error("Nenhum número de telefone válido fornecido");
+    }
+    
+    console.log(`Found ${validPhoneNumbers.length} valid phone numbers`);
+    
+    // 2. Criar entrada da mensagem
     const messageData: InsertMessage = {
       userId,
       content: messageContent,
       subject: subject || "Mensagem direta",
-      status: "sent",
+      type: "direct", // Especificar que é uma mensagem direta
+      status: "pending", // Inicialmente pendente até confirmação de envio
       sentAt: new Date()
     };
 
+    console.log("Creating message record");
     const newMessage = await this.createMessage(messageData);
+    console.log(`Created message with ID: ${newMessage.id}`);
 
-    // 2. Adicionar destinatários
-    const recipients: InsertMessageRecipient[] = phoneNumbers.map(phoneNumber => ({
+    // 3. Adicionar destinatários
+    const recipients: InsertMessageRecipient[] = validPhoneNumbers.map(phoneNumber => ({
       messageId: newMessage.id,
-      phoneNumber,
+      phoneNumber: phoneNumber.replace(/\D/g, ""), // Normalizar para apenas dígitos
       type: 'phone',
-      status: 'sent',
-      sentAt: new Date()
+      status: 'pending', // Inicialmente pendente
+      sentAt: null // Será atualizado quando enviado
     }));
 
+    console.log(`Adding ${recipients.length} recipients`);
     await this.addMessageRecipients(recipients);
+    
+    // 4. Atualizar status da mensagem (em uma implementação real, isso seria feito após confirmação de envio)
+    // Este é apenas um placeholder para demonstrar o fluxo
+    try {
+      // No futuro, poderia ter um sistema de callback para atualizar o status quando o envio fosse confirmado
+      console.log(`Message ${newMessage.id} ready for sending`);
+    } catch (error) {
+      console.error("Error during message preparation:", error);
+      // Não propagar o erro, apenas registrar
+    }
 
     return newMessage;
   }
