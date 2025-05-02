@@ -79,10 +79,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/schedules", isAuthenticated, getAllSchedules);
 
-  // WhatsApp connection status
+  // WhatsApp connection status com informações detalhadas para diagnóstico
   app.get("/api/whatsapp/status", isAuthenticated, (req, res) => {
-    const status = whatsappClient.getStatus();
-    res.json(status);
+    try {
+      // Atualizar informações e verificar se o cliente ainda está autenticado
+      const status = whatsappClient.getStatus();
+      
+      // Adicionar userId ao cliente se não estiver registrado
+      if (status.isAuthenticated && req.user && !whatsappClient.isUserAuthenticated(req.user.id)) {
+        whatsappClient.addAuthenticatedUser(req.user.id);
+        log(`Usuario ${req.user.id} marcado como autenticado em WhatsApp`, "whatsapp");
+      }
+      
+      // Adicionar informações extras para diagnóstico
+      let statusInfo = {
+        ...status,
+        env: process.env.NODE_ENV || 'unknown',
+        authenticated: status.isAuthenticated,
+        ready: status.isInitialized,
+        userId: req.user?.id,
+        userRegistered: req.user ? whatsappClient.isUserAuthenticated(req.user.id) : false,
+        timestamp: new Date().toISOString()
+      };
+      
+      res.json(statusInfo);
+    } catch (error) {
+      log(`Erro ao obter status do WhatsApp: ${error}`, "whatsapp");
+      res.status(500).json({ 
+        error: "Falha ao obter status do WhatsApp",
+        message: error instanceof Error ? error.message : "Erro desconhecido",
+        timestamp: new Date().toISOString()
+      });
+    }
   });
   
   // WhatsApp QR code endpoint - NEEDS PROTECTION IN PRODUCTION!
@@ -127,14 +155,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Obter apenas grupos do WhatsApp
+  // Obter apenas grupos do WhatsApp com logs detalhados
   app.get("/api/whatsapp/groups", isAuthenticated, async (req, res) => {
     try {
+      log(`Iniciando busca de grupos do WhatsApp para o usuário ${req.user?.id}`, "whatsapp");
+      
+      // Verificar status do cliente antes de tentar buscar grupos
+      const status = whatsappClient.getStatus();
+      
+      if (!status.isAuthenticated && process.env.NODE_ENV === 'production') {
+        log(`Tentativa de buscar grupos sem autenticação em produção. Gerando erro.`, "whatsapp");
+        return res.status(403).json({ 
+          message: "WhatsApp não está autenticado. Escaneie o QR code primeiro.",
+          status
+        });
+      }
+      
+      // Se estamos em produção e o cliente não está pronto mas o usuário está marcado como autenticado,
+      // podemos ter perdido a sessão.
+      if (req.user && whatsappClient.isUserAuthenticated(req.user.id) && !status.isAuthenticated) {
+        log(`Usuário ${req.user.id} está marcado como autenticado, mas o cliente não está.`, "whatsapp");
+      }
+      
+      // Tenta obter os grupos com logging detalhado
+      log(`Chamando método getWhatsAppGroups`, "whatsapp");
       const groups = await whatsappClient.getWhatsAppGroups();
+      log(`Obtidos ${groups.length} grupos com sucesso`, "whatsapp");
+      
       res.json(groups);
     } catch (error) {
-      console.error("Error fetching WhatsApp groups:", error);
-      res.status(500).json({ message: "Failed to fetch WhatsApp groups" });
+      log(`Error fetching WhatsApp groups: ${error}`, "whatsapp");
+      
+      // Fornecer mais detalhes sobre o erro
+      res.status(500).json({ 
+        message: "Failed to fetch WhatsApp groups", 
+        error: error instanceof Error ? error.message : "Erro desconhecido",
+        status: whatsappClient.getStatus()
+      });
     }
   });
   

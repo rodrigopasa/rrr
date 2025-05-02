@@ -53,6 +53,7 @@ class WhatsAppClient extends EventEmitter {
       log("Starting WhatsApp with WhatsApp Web.js", "whatsapp");
       
       // Iniciar cliente com autenticação padrão para garantir QR Code real e funcional
+      // Definir opções mais robustas para ambientes de produção
       this.client = new Client({
         puppeteer: {
           args: [
@@ -62,10 +63,22 @@ class WhatsAppClient extends EventEmitter {
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
             '--no-zygote',
-            '--disable-gpu'
+            '--disable-gpu',
+            '--disable-extensions',
+            '--disable-component-extensions-with-background-pages',
+            '--disable-default-apps',
+            '--mute-audio',
+            '--hide-scrollbars'
           ],
-          headless: true
-        }
+          headless: true,
+          // Aumentar timeouts para dar mais tempo em ambientes de produção com limitações
+          timeout: 60000 // 60 segundos (padrão é 30s)
+        },
+        // Habilitar autenticação multidevice com persistência de sessão
+        authStrategy: new (require('whatsapp-web.js')).LocalAuth({
+          clientId: 'automizap-client',
+          dataPath: './.wwebjs_auth' // Garantir persistência da sessão
+        })
       });
       
       // Escutar o evento de QR code
