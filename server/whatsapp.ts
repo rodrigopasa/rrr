@@ -37,7 +37,7 @@ class WhatsAppClient extends EventEmitter {
   private isAuthenticated = false;
   private authenticatedUsers = new Set<number>();
   private qrCode: string | null = null;
-  private isDevelopment = process.env.NODE_ENV === 'development';
+  private isDevelopment = false; // Forçado para produção
 
   constructor() {
     super();
