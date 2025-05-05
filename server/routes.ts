@@ -6,6 +6,7 @@ import { handleImportContacts } from "./controllers/contact-controller";
 import { handleSendMessage, handleSendDirectMessage, getRecentMessages, getAllMessages } from "./controllers/message-controller";
 import { getDashboardStats } from "./controllers/dashboard-controller";
 import { getUpcomingSchedules, getAllSchedules } from "./controllers/schedule-controller";
+import { handleGenerateAIMessage, handleAnalyzeMessageSentiment } from "./controllers/ai-controller";
 import { whatsappClient } from "./whatsapp";
 import { scheduleMessage } from "./services/message-scheduler";
 import multer from "multer";
@@ -79,6 +80,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/schedules/upcoming", isAuthenticated, getUpcomingSchedules);
   
   app.get("/api/schedules", isAuthenticated, getAllSchedules);
+  
+  // IA OpenAI API routes
+  app.post("/api/ai/generate-message", isAuthenticated, handleGenerateAIMessage);
+  app.post("/api/ai/analyze-sentiment", isAuthenticated, handleAnalyzeMessageSentiment);
 
   // WhatsApp connection status com informações detalhadas para diagnóstico
   app.get("/api/whatsapp/status", isAuthenticated, (req, res) => {

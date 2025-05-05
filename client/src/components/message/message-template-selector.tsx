@@ -134,11 +134,22 @@ export default function MessageTemplateSelector({ onSelectTemplate }: MessageTem
     setIsGenerating(true);
 
     try {
-      // Aqui simulamos a geração com IA, mas seria uma chamada real para API como OpenAI, etc.
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Chamada para a API real OpenAI
+      const response = await fetch('/api/ai/generate-message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: aiPrompt }),
+      });
       
-      // Texto simulado gerado pela IA
-      const aiGeneratedText = `✨ ${aiPrompt.toUpperCase()} ✨\n\nOlá {nome},\n\nEstamos muito empolgados em compartilhar novidades sobre {produto} com você!\n\nDescubra como nosso lançamento pode transformar sua experiência e trazer resultados impressionantes.\n\nAcesse {link} para saber mais!\n\nAtenciosamente,\n{empresa}`;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Falha ao gerar mensagem com IA');
+      }
+      
+      const data = await response.json();
+      const aiGeneratedText = data.text;
       
       setCustomTemplate(aiGeneratedText);
       setShowAIDialog(false);
@@ -148,9 +159,10 @@ export default function MessageTemplateSelector({ onSelectTemplate }: MessageTem
         description: "A mensagem foi gerada com sucesso! Você pode editá-la antes de aplicar.",
       });
     } catch (error) {
+      console.error('Erro na geração com IA:', error);
       toast({
         title: "Erro na geração",
-        description: "Não foi possível gerar o conteúdo. Tente novamente.",
+        description: error instanceof Error ? error.message : "Não foi possível gerar o conteúdo. Tente novamente.",
         variant: "destructive"
       });
     } finally {
