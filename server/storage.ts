@@ -220,6 +220,15 @@ export class DatabaseStorage implements IStorage {
     .orderBy(desc(messages.sentAt))
     .limit(limit);
   }
+  
+  // Método para atualizar o status de uma mensagem
+  async updateMessageStatus(messageId: string, status: string): Promise<void> {
+    await db.update(messages)
+      .set({
+        status: status
+      })
+      .where(eq(messages.id, messageId));
+  }
 
   async addMessageRecipients(recipients: InsertMessageRecipient[]): Promise<MessageRecipient[]> {
     if (recipients.length === 0) return [];
@@ -228,7 +237,7 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
 
-  async getScheduledMessages(userId: number, filters: { search?: string, type?: string } = {}): Promise<any[]> {
+  async getScheduledMessages(userId: number, filters: { search?: string, type?: string, status?: string } = {}): Promise<any[]> {
     let query = db.select({
       id: messages.id,
       userId: messages.userId,
@@ -260,8 +269,21 @@ export class DatabaseStorage implements IStorage {
       );
     }
 
+    // Filtro por status (scheduled, sent, expired, etc)
+    if (filters.status && filters.status !== 'all') {
+      query = query.where(eq(messages.status, filters.status));
+    }
+
+    // Filtro por tipo (individual, group, campaign)
     if (filters.type && filters.type !== 'all') {
-      // Implementar filtro por tipo se necessário
+      // Se o tipo for 'group', procurar por mensagens que contêm "grupo" no assunto
+      if (filters.type === 'group') {
+        query = query.where(like(messages.subject || '', '%grupo%'));
+      }
+      // Se o tipo for 'campaign', procurar por mensagens que contêm "campanha" no assunto
+      else if (filters.type === 'campaign') {
+        query = query.where(like(messages.subject || '', '%campanha%'));
+      }
     }
 
     // Ordenar por data de agendamento
@@ -276,7 +298,10 @@ export class DatabaseStorage implements IStorage {
     return db.select({
       id: messages.id,
       subject: messages.subject,
+      content: messages.content,
       scheduledAt: messages.scheduledAt,
+      status: messages.status,
+      createdAt: messages.createdAt,
       recipientCount: db.sql<number>`COUNT(DISTINCT ${messageRecipients.id})`
     })
     .from(messages)
@@ -285,6 +310,7 @@ export class DatabaseStorage implements IStorage {
       and(
         eq(messages.userId, userId),
         eq(messages.isScheduled, true),
+        eq(messages.status, 'scheduled'),
         not(isNull(messages.scheduledAt))
       )
     )

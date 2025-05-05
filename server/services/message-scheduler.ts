@@ -83,6 +83,14 @@ export function scheduleMessage(message: ScheduledMessage, scheduledTime: Date):
         log(`Message ${message.id} sent to ${result.successful.length} recipients, failed for ${result.failed.length} recipients`, 'scheduler');
       }
       
+      // Atualizar o status da mensagem para 'sent'
+      try {
+        await storage.updateMessageStatus(message.id, 'sent');
+        log(`Updated message ${message.id} status to 'sent'`, 'scheduler');
+      } catch (error) {
+        log(`Error updating message status: ${error}`, 'scheduler');
+      }
+      
       // Clean up the scheduled task
       scheduledTasks.delete(message.id);
     } catch (error) {
@@ -127,7 +135,7 @@ export async function loadScheduledMessages(): Promise<void> {
     
     // Para cada usuário, carregar suas mensagens agendadas
     for (const userId of userIds) {
-      const schedules = await storage.getScheduledMessages(userId, { status: 'scheduled' });
+      const schedules = await storage.getScheduledMessages(userId, { type: 'all', status: 'scheduled' });
       
       log(`Found ${schedules.length} pending scheduled messages for user ${userId}`, 'scheduler');
       pendingMessagesCount += schedules.length;

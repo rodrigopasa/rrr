@@ -38,7 +38,9 @@ function formatScheduledMessages(schedules: any[]): FormattedSchedule[] {
       recipients: schedule.recipients || "Todos os contatos",
       recipientCount: schedule.recipientCount || 0,
       type: messageType,
-      scheduledFor: schedule.scheduledAt
+      scheduledFor: schedule.scheduledAt || schedule.scheduledFor,
+      content: schedule.content || "",
+      status: schedule.status || "scheduled"
     };
   });
 }
