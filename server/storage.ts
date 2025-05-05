@@ -14,6 +14,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getAllUserIds(): Promise<number[]>; // Retorna IDs de todos os usuários
   
   // Contact operations
   getContacts(userId: number, search?: string): Promise<Contact[]>;
@@ -30,12 +31,13 @@ export interface IStorage {
   createMessage(message: InsertMessage): Promise<Message>;
   getMessages(userId: number, filters?: { search?: string, status?: string }): Promise<any[]>;
   getRecentMessages(userId: number, limit?: number): Promise<any[]>;
+  updateMessageStatus(messageId: string, status: string): Promise<void>; // Atualiza o status da mensagem
   
   // Message recipients operations
   addMessageRecipients(recipients: InsertMessageRecipient[]): Promise<MessageRecipient[]>;
   
   // Schedule operations
-  getScheduledMessages(userId: number, filters?: { search?: string, type?: string }): Promise<any[]>;
+  getScheduledMessages(userId: number, filters?: { search?: string, type?: string, status?: string }): Promise<any[]>;
   getUpcomingSchedules(userId: number, limit?: number): Promise<any[]>;
   
   // Dashboard operations
@@ -76,6 +78,11 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+  
+  async getAllUserIds(): Promise<number[]> {
+    const result = await db.select({ id: users.id }).from(users);
+    return result.map(user => user.id);
   }
 
   async getContacts(userId: number, search: string = ""): Promise<Contact[]> {

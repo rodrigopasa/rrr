@@ -23,18 +23,35 @@ export function scheduleMessage(message: ScheduledMessage, scheduledTime: Date):
   const now = new Date();
   const delay = scheduledTime.getTime() - now.getTime();
   
-  // Permitir agendamento mesmo que seja para poucos minutos no futuro
+  // Garantir tempo mínimo de 30 segundos para evitar problemas
+  const minDelay = 30 * 1000; // 30 segundos em milissegundos
+  const actualDelay = Math.max(delay, minDelay);
+  
+  // Não permitir agendamento no passado
   if (delay < 0) {
     log(`Cannot schedule message ${message.id} in the past`, 'scheduler');
     return;
   }
   
+  // Cálculo de minutos para log, usando o delay original para mensagem mais precisa
   const minutes = Math.round(delay / 1000 / 60);
-  const timeDescription = minutes < 60 
-    ? `${minutes} minuto${minutes !== 1 ? 's' : ''}` 
-    : `${Math.round(minutes / 60)} hora${Math.round(minutes / 60) !== 1 ? 's' : ''} e ${minutes % 60} minuto${minutes % 60 !== 1 ? 's' : ''}`;
   
-  log(`Scheduling message ${message.id} to be sent in ${timeDescription}`, 'scheduler');
+  // Formatação de texto para log mais detalhado
+  let timeDescription;
+  if (minutes < 1) {
+    timeDescription = `menos de 1 minuto`;
+  } else if (minutes < 60) {
+    timeDescription = `${minutes} minuto${minutes !== 1 ? 's' : ''}`;
+  } else {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    timeDescription = `${hours} hora${hours !== 1 ? 's' : ''}`;
+    if (remainingMinutes > 0) {
+      timeDescription += ` e ${remainingMinutes} minuto${remainingMinutes !== 1 ? 's' : ''}`;
+    }
+  }
+  
+  log(`Scheduling message ${message.id} to be sent in ${timeDescription} (${scheduledTime.toLocaleString('pt-BR', {timeZone: 'America/Sao_Paulo'})})`, 'scheduler');
   
   // Create a timeout to send the message
   const timeout = setTimeout(async () => {
@@ -71,7 +88,7 @@ export function scheduleMessage(message: ScheduledMessage, scheduledTime: Date):
     } catch (error) {
       log(`Error sending scheduled message ${message.id}: ${error}`, 'scheduler');
     }
-  }, delay);
+  }, actualDelay);
   
   // Store the timeout so it can be cancelled if needed
   scheduledTasks.set(message.id, timeout);
@@ -99,30 +116,71 @@ export function getScheduledMessages(): string[] {
 }
 
 /**
- * Load scheduled messages from storage (would be used in a real app on startup)
+ * Load scheduled messages from storage on application startup
  */
 export async function loadScheduledMessages(): Promise<void> {
   log('Loading scheduled messages from storage', 'scheduler');
   try {
-    // Em uma aplicação real, carregaríamos as mensagens agendadas do banco de dados
-    // e reagendaríamos aquelas que ainda estão no futuro
+    // Usar a interface de storage para obter as mensagens agendadas pendentes
+    const userIds = await storage.getAllUserIds();
+    let pendingMessagesCount = 0;
     
-    /* Exemplo de código para uma implementação real
-    const pendingMessages = await storage.getPendingScheduledMessages();
-    
-    for (const message of pendingMessages) {
-      if (message.scheduledAt > new Date()) {
-        scheduleMessage({
-          id: message.id,
-          userId: message.userId,
-          recipients: message.recipients,
-          content: message.content,
-          subject: message.subject,
-          isGroup: message.isGroup
-        }, message.scheduledAt);
+    // Para cada usuário, carregar suas mensagens agendadas
+    for (const userId of userIds) {
+      const schedules = await storage.getScheduledMessages(userId, { status: 'scheduled' });
+      
+      log(`Found ${schedules.length} pending scheduled messages for user ${userId}`, 'scheduler');
+      pendingMessagesCount += schedules.length;
+      
+      // Para cada mensagem agendada
+      for (const schedule of schedules) {
+        const scheduledTime = new Date(schedule.scheduledAt || schedule.scheduledFor);
+        
+        // Verifique se a data de agendamento ainda está no futuro
+        if (scheduledTime > new Date()) {
+          log(`Loading scheduled message ${schedule.id} for ${scheduledTime.toLocaleString('pt-BR')}`, 'scheduler');
+          
+          // Formatar o array de destinatários 
+          let recipients: string[] = [];
+          if (schedule.recipients) {
+            // Se já temos um array ou string com destinatários, usamos ele
+            recipients = Array.isArray(schedule.recipients) 
+              ? schedule.recipients 
+              : typeof schedule.recipients === 'string' 
+                ? schedule.recipients.split(',') 
+                : [];
+          } else if (schedule.recipientIds) {
+            // Se temos IDs de destinatários, convertemos para um array
+            recipients = Array.isArray(schedule.recipientIds)
+              ? schedule.recipientIds
+              : typeof schedule.recipientIds === 'string'
+                ? schedule.recipientIds.split(',')
+                : [];
+          }
+          
+          // Verificar se é uma mensagem para grupos
+          const isGroup = schedule.type === 'group' || 
+                       schedule.subject?.toLowerCase().includes('grupo') || 
+                       schedule.content?.toLowerCase().includes('grupo');
+          
+          // Reprogramar a mensagem
+          scheduleMessage({
+            id: schedule.id,
+            userId: schedule.userId || userId,
+            recipients: recipients,
+            content: schedule.content,
+            subject: schedule.subject,
+            isGroup: isGroup
+          }, scheduledTime);
+        } else {
+          // Se a mensagem já deveria ter sido enviada, atualizar status
+          await storage.updateMessageStatus(schedule.id, 'expired');
+          log(`Marked expired scheduled message ${schedule.id}`, 'scheduler');
+        }
       }
     }
-    */
+    
+    log(`Total pending scheduled messages: ${pendingMessagesCount}`, 'scheduler');
   } catch (error) {
     log(`Error loading scheduled messages: ${error}`, 'scheduler');
   }
