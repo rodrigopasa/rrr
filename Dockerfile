@@ -89,35 +89,25 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV NODE_ENV=production
 ENV PUPPETEER_ARGS="--no-sandbox,--disable-setuid-sandbox,--disable-dev-shm-usage,--disable-gpu"
 
-# Configurar o diretório de trabalho
+# Criar diretório de trabalho
 WORKDIR /app
 
-# Copiar arquivos de dependências
+# Copiar package.json e package-lock.json 
 COPY package*.json ./
 
-# Instalar dependências
-# Usar npm install em vez de npm ci para garantir que as novas dependências sejam adicionadas
-RUN npm install
+# Instalar somente as dependências de produção
+RUN npm ci --only=production
 
-# Copiar o resto dos arquivos
-COPY . .
+# Copiar os arquivos construídos da etapa anterior
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/client/dist ./client/dist
 
-# Construir o aplicativo
-RUN npm run build
+# Copiar outros arquivos necessários
+COPY ./server/whatsapp-compat.ts ./server/
+COPY ./server/whatsapp.ts ./server/
 
-# Expor a porta que o aplicativo usará
+# Expor a porta que a aplicação usa
 EXPOSE 5000
 
-# Criar diretório para dados de autenticação WhatsApp
-RUN mkdir -p /app/whatsapp-auth && chmod -R 777 /app/whatsapp-auth
-
-# Definir variável de ambiente para produção
-ENV NODE_ENV=production
-ENV PORT=5000
-
-# Copiar e tornar executável o script de inicialização
-COPY startup.sh /app/startup.sh
-RUN chmod +x /app/startup.sh
-
-# Comando para iniciar o aplicativo usando o script
-CMD ["/app/startup.sh"]
+# Iniciar a aplicação
+CMD ["npm", "start"]
