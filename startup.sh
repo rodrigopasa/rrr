@@ -29,10 +29,6 @@ echo "Aplicando atualizações do schema no banco de dados..."
 npm run db:push
 echo "✓ Schema atualizado com sucesso"
 
-# Inserir dados iniciais se necessário
-echo "Verificando e inserindo dados iniciais..."
-npm run db:seed
-echo "✓ Dados iniciais verificados"
 
 # Configurar o fuso horário para São Paulo (America/Sao_Paulo)
 echo "Configurando ambiente para fuso horário de São Paulo..."
